@@ -5,6 +5,9 @@ const cors = require("cors");
 const http = require("http");
 const { Server } = require("socket.io");
 const coursedsctlr = require("./controllers/coursedsctlr.js");
+const patentctlr = require("./controllers/patentctlr");
+const projectctlr = require("./controllers/projectctlr");
+const publicationctlr = require("./controllers/publicationctlr");
 
 dotenv.config();
 
@@ -55,6 +58,23 @@ app.post("/api/v2/savemessage", coursedsctlr.savemessage);
 app.get("/api/v2/getmessagesbyroom/:room", coursedsctlr.getmessagesbyroom);
 
 app.get("/api/v2/getawsconfigbycolid", coursedsctlr.getawsconfigbycolid);
+
+// Patent Management
+app.post("/api/v2/createpatent", patentctlr.createpatent);
+app.get("/api/v2/getpatentsbyuser", patentctlr.getpatentsbyuser);
+app.put("/api/v2/updatepatent/:id", patentctlr.updatepatent);
+app.delete("/api/v2/deletepatent/:id", patentctlr.deletepatent);
+// Project Management
+app.post("/api/v2/createproject", projectctlr.createproject);
+app.get("/api/v2/getprojectsbyuser", projectctlr.getprojectsbyuser);
+app.post("/api/v2/updateproject", projectctlr.updateproject); // POST method
+app.get("/api/v2/deleteproject", projectctlr.deleteproject);   // GET method
+
+// Publication Management
+app.post("/api/v2/createpublication", publicationctlr.createpublication);
+app.get("/api/v2/getpublicationsbyuser", publicationctlr.getpublicationsbyuser);
+app.post("/api/v2/updatepublication", publicationctlr.updatepublication); // POST method
+app.get("/api/v2/deletepublication", publicationctlr.deletepublication);   // GET method
 
 // ======================
 // SOCKET.IO HANDLERS
