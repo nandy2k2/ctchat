@@ -8,6 +8,9 @@ const coursedsctlr = require("./controllers/coursedsctlr.js");
 const patentctlr = require("./controllers/patentctlr");
 const projectctlr = require("./controllers/projectctlr");
 const publicationctlr = require("./controllers/publicationctlr");
+const seminarctlr = require("./controllers/seminarctlr.js");
+const consultancyctlr = require("./controllers/consultancyctlr.js");
+const attendancectlr = require("./controllers/attendancectlr.js");
 
 dotenv.config();
 
@@ -75,6 +78,32 @@ app.post("/api/v2/createpublication", publicationctlr.createpublication);
 app.get("/api/v2/getpublicationsbyuser", publicationctlr.getpublicationsbyuser);
 app.post("/api/v2/updatepublication", publicationctlr.updatepublication); // POST method
 app.get("/api/v2/deletepublication", publicationctlr.deletepublication);   // GET method
+
+// Seminar Management - Add these routes
+app.post("/api/v2/createseminar", seminarctlr.createseminar);
+app.get("/api/v2/getseminarsbyuser", seminarctlr.getseminarsbyuser);
+app.post("/api/v2/updateseminar", seminarctlr.updateseminar); // POST method
+app.get("/api/v2/deleteseminar", seminarctlr.deleteseminar);   // GET method
+
+// Consultancy Management - Add these routes
+app.post("/api/v2/createconsultancy", consultancyctlr.createconsultancy);
+app.get("/api/v2/getconsultanciesbyuser", consultancyctlr.getconsultanciesbyuser);
+app.post("/api/v2/updateconsultancy", consultancyctlr.updateconsultancy); // POST method
+app.get("/api/v2/deleteconsultancy", consultancyctlr.deleteconsultancy);   // GET method
+
+// Attendance Management Routes
+app.post("/api/v2/createclass", attendancectlr.createclass);
+app.get("/api/v2/getclassesbyuser", attendancectlr.getclassesbyuser);
+app.get("/api/v2/searchusers", attendancectlr.searchusers);
+app.post("/api/v2/enrollstudent", attendancectlr.enrollstudent);
+app.get("/api/v2/getenrolledstudents", attendancectlr.getenrolledstudents);
+app.post("/api/v2/markattendance", attendancectlr.markattendance);
+
+// Advanced Report routes with aggregation
+app.get("/api/v2/getclassreportaggregate", attendancectlr.getclassreportaggregate);
+app.get("/api/v2/getstudentreportaggregate", attendancectlr.getstudentreportaggregate);
+app.get("/api/v2/getattendancesummarybydate", attendancectlr.getattendancesummarybydate);
+app.get('/api/v2/getsinglestudentreport', attendancectlr.getsinglestudentrport);
 
 // ======================
 // SOCKET.IO HANDLERS
