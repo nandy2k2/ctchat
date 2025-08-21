@@ -11,6 +11,8 @@ const publicationctlr = require("./controllers/publicationctlr");
 const seminarctlr = require("./controllers/seminarctlr.js");
 const consultancyctlr = require("./controllers/consultancyctlr.js");
 const attendancectlr = require("./controllers/attendancectlr.js");
+const testdsctlr = require("./controllers/testdsctlr.js");
+const testsubmissiondsctlr = require("./controllers/testsubmissiondsctlr.js");
 
 dotenv.config();
 
@@ -104,6 +106,29 @@ app.get("/api/v2/getclassreportaggregate", attendancectlr.getclassreportaggregat
 app.get("/api/v2/getstudentreportaggregate", attendancectlr.getstudentreportaggregate);
 app.get("/api/v2/getattendancesummarybydate", attendancectlr.getattendancesummarybydate);
 app.get('/api/v2/getsinglestudentreport', attendancectlr.getsinglestudentrport);
+
+// Test Management Routes
+app.post("/api/v2/createtestds", testdsctlr.createtestds);
+app.get("/api/v2/gettestsbyuser", testdsctlr.gettestsbyuser);
+app.post("/api/v2/updatetestds", testdsctlr.updatetestds);
+app.get("/api/v2/deletetestds", testdsctlr.deletetestds);
+app.post("/api/v2/generatequestionsds", testdsctlr.generatequestionsds);
+app.post("/api/v2/publishtestds", testdsctlr.publishtestds);
+app.get("/api/v2/getavailabletestsds", testdsctlr.getavailabletestsds);
+
+// API Key Management Routes
+app.post("/api/v2/createapikeyds", testdsctlr.createapikeyds);
+app.get("/api/v2/getapikeyds", testdsctlr.getapikeyds);
+app.get("/api/v2/getactiveapikeyds", testdsctlr.getactiveapikeyds);
+app.post("/api/v2/updateusageds", testdsctlr.updateusageds);
+
+// Test Submission Management Routes
+app.post("/api/v2/createtestsubmissionds", testsubmissiondsctlr.createtestsubmissionds);
+app.get("/api/v2/gettestsubmissionsbyuser", testsubmissiondsctlr.gettestsubmissionsbyuser);
+app.get("/api/v2/gettestsubmissionsbytest", testsubmissiondsctlr.gettestsubmissionsbytest);
+app.post("/api/v2/starttestds", testsubmissiondsctlr.starttestds);
+app.post("/api/v2/submitanswerds", testsubmissiondsctlr.submitanswerds);
+app.post("/api/v2/submittestds", testsubmissiondsctlr.submittestds);
 
 // ======================
 // SOCKET.IO HANDLERS
