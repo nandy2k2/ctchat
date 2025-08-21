@@ -317,8 +317,7 @@ exports.getactiveapikeyds = async (req, res) => {
         const { colid, facultyid } = req.query;
         const apikey = await gptapikeyds.findOne({ 
             colid: parseInt(colid), 
-            facultyid: facultyid,
-            isactive: true
+            facultyid: facultyid
         });
         
         if (!apikey) {
