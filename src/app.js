@@ -13,6 +13,8 @@ const consultancyctlr = require("./controllers/consultancyctlr.js");
 const attendancectlr = require("./controllers/attendancectlr.js");
 const testdsctlr = require("./controllers/testdsctlr.js");
 const testsubmissiondsctlr = require("./controllers/testsubmissiondsctlr.js");
+const collaborationctlr = require("./controllers/collaborationctlr.js");
+const userctlr = require("./controllers/userctlr.js");
 
 dotenv.config();
 
@@ -123,12 +125,61 @@ app.get("/api/v2/getactiveapikeyds", testdsctlr.getactiveapikeyds);
 app.post("/api/v2/updateusageds", testdsctlr.updateusageds);
 
 // Test Submission Management Routes
+// app.post("/api/v2/createtestsubmissionds", testsubmissiondsctlr.createtestsubmissionds);
+// app.get("/api/v2/gettestsubmissionsbyuser", testsubmissiondsctlr.gettestsubmissionsbyuser);
+// app.get("/api/v2/gettestsubmissionsbytest", testsubmissiondsctlr.gettestsubmissionsbytest);
+// app.post("/api/v2/starttestds", testsubmissiondsctlr.starttestds);
+// app.post("/api/v2/submitanswerds", testsubmissiondsctlr.submitanswerds);
+// app.post("/api/v2/submittestds", testsubmissiondsctlr.submittestds);
+
 app.post("/api/v2/createtestsubmissionds", testsubmissiondsctlr.createtestsubmissionds);
 app.get("/api/v2/gettestsubmissionsbyuser", testsubmissiondsctlr.gettestsubmissionsbyuser);
 app.get("/api/v2/gettestsubmissionsbytest", testsubmissiondsctlr.gettestsubmissionsbytest);
 app.post("/api/v2/starttestds", testsubmissiondsctlr.starttestds);
 app.post("/api/v2/submitanswerds", testsubmissiondsctlr.submitanswerds);
 app.post("/api/v2/submittestds", testsubmissiondsctlr.submittestds);
+
+//student setting
+app.get("/api/v2/gettesteliiblestudents/:testid", testdsctlr.gettesteliiblestudents);
+app.post("/api/v2/allowstudentretake", testdsctlr.allowstudentretake);
+app.get("/api/v2/checkstudenteligibility/:testid/:studentid", testdsctlr.checkstudenteligibility);
+
+// Collaboration Post Management
+app.post("/api/v2/createcollaborationpost", collaborationctlr.createcollaborationpost);
+app.get("/api/v2/getcollaborationposts", collaborationctlr.getcollaborationposts);
+app.get("/api/v2/getcollaborationpostsbyuser", collaborationctlr.getcollaborationpostsbyuser);
+app.post("/api/v2/updatecollaborationpost", collaborationctlr.updatecollaborationpost);
+app.get("/api/v2/deletecollaborationpost", collaborationctlr.deletecollaborationpost);
+
+// Collaboration Request Management
+app.post("/api/v2/sendcollaborationrequest", collaborationctlr.sendcollaborationrequest);
+app.get("/api/v2/getcollaborationrequests", collaborationctlr.getcollaborationrequests);
+app.get("/api/v2/getsentcollaborationrequests", collaborationctlr.getsentcollaborationrequests);
+app.post("/api/v2/acceptcollaborationrequest", collaborationctlr.acceptcollaborationrequest);
+app.post("/api/v2/rejectcollaborationrequest", collaborationctlr.rejectcollaborationrequest);
+
+// Active Collaboration Management
+app.get("/api/v2/getactivecollaborations", collaborationctlr.getactivecollaborations);
+app.post("/api/v2/updatecollaborationactivity", collaborationctlr.updatecollaborationactivity);
+
+// Notification Management
+app.get("/api/v2/getnotifications", collaborationctlr.getnotifications);
+app.get("/api/v2/getunreadnotificationscount", collaborationctlr.getunreadnotificationscount);
+app.post("/api/v2/marknotificationread", collaborationctlr.marknotificationread);
+app.post("/api/v2/markallnotificationsread", collaborationctlr.markallnotificationsread);
+
+// Enhanced Profile Routes
+app.get("/api/v2/getfacultyprofilestats", collaborationctlr.getfacultyprofilestats);
+app.get("/api/v2/getrecentactivities", collaborationctlr.getrecentactivities);
+app.get("/api/v2/getfacultyprofile", collaborationctlr.getfacultyprofile);
+app.get("/api/v2/getfacultyprofilewithworks", collaborationctlr.getfacultyprofilewithworks);
+app.post("/api/v2/createfacultyprofile", collaborationctlr.createfacultyprofile);
+app.post("/api/v2/addworkexperience", collaborationctlr.addworkexperience);
+
+
+//user photo update
+app.post("/api/v2/updateuserphoto", userctlr.updateuserphoto)
+
 
 // ======================
 // SOCKET.IO HANDLERS
