@@ -1,0 +1,637 @@
+const testsubmissionds1 = require('../Models/testsubmissionds1');
+const aigenerationlogds = require('../Models/aigeneratedlogds');
+const gptapikeyds = require('../Models/gptapikeyds');
+const testds1 = require('../Models/testds1');
+const classenr1 = require('../Models/classenr1');
+const User = require("../Models/user");
+const mongoose = require('mongoose');
+
+// Create or Update Test (Updated for sections)
+exports.createtestds1 = async (req, res) => {
+  try {
+    const {
+      name, user, colid, classid, course, coursecode, testtitle, description,
+      topic, scheduleddate, starttime, endtime, duration, totalnoofquestion,
+      questions, sections, sectionBased, shufflequestions, showresultsimmediately, 
+      allowretake, passingscore, timelimit, proctoringmode, calculatorallowed,
+      formulasheetallowed, instructions, rules, status, ispublished
+    } = req.body;
+
+    const filter = { testtitle, colid, user };
+    const update = {
+      name, user, colid, classid, course, coursecode, testtitle, description,
+      topic, scheduleddate, starttime, endtime, duration, totalnoofquestion,
+      questions, sections: sections || [], sectionBased: sectionBased || false,
+      shufflequestions, showresultsimmediately, allowretake, passingscore, 
+      timelimit, proctoringmode, calculatorallowed, formulasheetallowed, 
+      instructions, rules, status, ispublished, updatedat: new Date()
+    };
+
+    const testdsnew = await testds1.findOneAndUpdate(filter, update, {
+      new: true, upsert: true, setDefaultsOnInsert: true
+    });
+
+    res.status(200).json({
+      success: true,
+      data: testdsnew,
+      message: "Test created/updated successfully"
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+// Get Tests by user and colid (Using aggregation)
+exports.gettestsbyuser1 = async (req, res) => {
+  try {
+    const { colid, user } = req.query;
+    
+    const pipeline = [
+      { $match: { colid: parseInt(colid), user: user } },
+      { $sort: { createdat: -1 } },
+      {
+        $addFields: {
+          totalQuestionsCalculated: { $size: "$questions" },
+          sectionsCount: { $size: { $ifNull: ["$sections", []] } }
+        }
+      }
+    ];
+
+    const testdsget = await testds1.aggregate(pipeline);
+
+    res.status(200).json({
+      success: true,
+      count: testdsget.length,
+      data: testdsget
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+// Get Available Tests for Students (Using aggregation)
+exports.getavailabletestsds1 = async (req, res) => {
+  try {
+    const { colid, classid } = req.query;
+    const currentTime = new Date();
+
+    const pipeline = [
+      {
+        $match: {
+          colid: parseInt(colid),
+          classid: classid,
+          ispublished: true,
+          starttime: { $lte: currentTime },
+          endtime: { $gte: currentTime },
+          status: { $in: ['scheduled', 'active'] }
+        }
+      },
+      { $sort: { starttime: 1 } },
+      {
+        $addFields: {
+          totalQuestionsCalculated: { $size: "$questions" },
+          sectionsCount: { $size: { $ifNull: ["$sections", []] } },
+          isActive: {
+            $and: [
+              { $lte: ["$starttime", currentTime] },
+              { $gte: ["$endtime", currentTime] }
+            ]
+          }
+        }
+      }
+    ];
+
+    const testdsavai = await testds1.aggregate(pipeline);
+
+    res.status(200).json({
+      success: true,
+      count: testdsavai.length,
+      data: testdsavai
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+// Get eligible students with submission counts (Using aggregation)
+exports.gettesteliiblestudents1 = async (req, res) => {
+  try {
+    const { testid } = req.params;
+
+    // Use aggregation to get test info and enrolled students
+    const testPipeline = [
+      { $match: { _id: new mongoose.Types.ObjectId(testid) } },
+      {
+        $lookup: {
+          from: 'classenr1',
+          let: { coursecode: '$coursecode', colid: '$colid' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$coursecode', '$$coursecode'] },
+                    { $eq: ['$colid', '$$colid'] }
+                  ]
+                }
+              }
+            }
+          ],
+          as: 'enrolledStudents'
+        }
+      },
+      {
+        $lookup: {
+          from: 'testsubmissionds1',
+          let: { testid: { $toString: '$_id' } },
+          pipeline: [
+            { $match: { $expr: { $eq: ['$testid', '$$testid'] } } },
+            {
+              $group: {
+                _id: '$studentid',
+                submissionCount: { $sum: 1 },
+                latestSubmission: { $max: '$createdat' },
+                status: { $last: '$status' }
+              }
+            }
+          ],
+          as: 'submissions'
+        }
+      },
+      {
+        $project: {
+          testtitle: 1,
+          coursecode: 1,
+          enrolledStudents: 1,
+          submissionCounts: {
+            $arrayToObject: {
+              $map: {
+                input: '$submissions',
+                as: 'sub',
+                in: {
+                  k: '$$sub._id',
+                  v: '$$sub.submissionCount'
+                }
+              }
+            }
+          }
+        }
+      }
+    ];
+
+    const result = await testds1.aggregate(testPipeline);
+    
+    if (!result.length) {
+      return res.status(404).json({ success: false, message: 'Test not found' });
+    }
+
+    const testData = result[0];
+    const eligibleStudents = testData.enrolledStudents.map(student => ({
+      studentId: student.regno,
+      studentName: student.student,
+      regno: student.regno,
+      name: student.student,
+      year: student.year,
+      program: student.program,
+      semester: student.semester,
+      classgroup: student.classgroup,
+      submissionCount: testData.submissionCounts[student.email] || 0,
+      hasSubmission: (testData.submissionCounts[student.email] || 0) > 0,
+      enrollmentData: {
+        year: student.year,
+        program: student.program,
+        semester: student.semester,
+        classgroup: student.classgroup,
+        gender: student.gender
+      }
+    }));
+
+    return res.json({
+      success: true,
+      message: 'Eligible students retrieved successfully',
+      data: eligibleStudents,
+      total: eligibleStudents.length,
+      testInfo: {
+        title: testData.testtitle,
+        coursecode: testData.coursecode
+      }
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+// Allow student retake (Using aggregation for update)
+exports.allowstudentretake1 = async (req, res) => {
+  try {
+    const { testid, studentid, user, colid } = req.body;
+
+    // Verify test ownership using aggregation
+    const testCheck = await testds1.aggregate([
+      {
+        $match: {
+          _id: new mongoose.Types.ObjectId(testid),
+          user: user,
+          colid: parseInt(colid)
+        }
+      },
+      { $project: { _id: 1, testtitle: 1 } }
+    ]);
+
+    if (!testCheck.length) {
+      return res.status(404).json({
+        success: false,
+        message: 'Test not found or access denied'
+      });
+    }
+
+    // Find student email by regno using aggregation
+    const userPipeline = [
+      { $match: { regno: studentid } },
+      { $project: { email: 1 } }
+    ];
+    
+    const userResult = await User.aggregate(userPipeline);
+    
+    if (!userResult.length) {
+      return res.status(404).json({
+        success: false,
+        message: 'Student not found in user records'
+      });
+    }
+
+    // Reset submission status using findOneAndUpdate
+    const updatedSubmission = await testsubmissionds1.findOneAndUpdate(
+      { testid: testid, studentid: userResult[0].email },
+      { $set: { status: 'started', updatedat: new Date() } },
+      { new: true, sort: { createdat: -1 } }
+    );
+
+    if (!updatedSubmission) {
+      return res.status(404).json({
+        success: false,
+        message: 'No submission found for this student'
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: 'Student can now retake the test',
+      data: {
+        studentid: studentid,
+        studentEmail: userResult[0].email,
+        testid: testid,
+        newStatus: updatedSubmission.status,
+        submissionId: updatedSubmission._id
+      }
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+// Other exports remain the same...
+exports.updatetestds1 = async (req, res) => {
+  try {
+    const { id, name, user, colid, classid, course, coursecode, testtitle, description,
+      topic, scheduleddate, starttime, endtime, duration, totalnoofquestion,
+      questions, sections, sectionBased, shufflequestions, showresultsimmediately, 
+      allowretake, passingscore, timelimit, proctoringmode, calculatorallowed,
+      formulasheetallowed, instructions, rules, status, ispublished } = req.body;
+
+    const testdsupdated = await testds1.findOneAndUpdate(
+      { _id: id, colid: parseInt(colid), user: user },
+      {
+        name, user, colid, classid, course, coursecode, testtitle, description,
+        topic, scheduleddate, starttime, endtime, duration, totalnoofquestion,
+        questions, sections: sections || [], sectionBased: sectionBased || false,
+        shufflequestions, showresultsimmediately, allowretake, passingscore, 
+        timelimit, proctoringmode, calculatorallowed, formulasheetallowed, 
+        instructions, rules, status, ispublished, updatedat: new Date()
+      },
+      { new: true }
+    );
+
+    if (!testdsupdated) {
+      return res.status(404).json({ success: false, message: "Test not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: testdsupdated,
+      message: "Test updated successfully"
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+exports.deletetestds1 = async (req, res) => {
+  try {
+    const { id, colid, user } = req.query;
+    await testds1.findOneAndDelete({
+      _id: id,
+      colid: parseInt(colid),
+      user: user
+    });
+    res.status(200).json({
+      success: true,
+      message: "Test deleted successfully"
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+exports.publishtestds1 = async (req, res) => {
+  try {
+    const { id, colid, user } = req.body;
+    const testdspublish = await testds1.findOneAndUpdate(
+      { _id: id, colid: parseInt(colid), user: user },
+      {
+        ispublished: true,
+        status: 'scheduled',
+        publishedat: new Date(),
+        updatedat: new Date()
+      },
+      { new: true }
+    );
+
+    if (!testdspublish) {
+      return res.status(404).json({ success: false, message: "Test not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: testdspublish,
+      message: "Test published successfully"
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+// API Key management functions remain the same...
+exports.createapikeyds1 = async (req, res) => {
+  try {
+    const { name, user, colid, facultyid, defaultapikey, personalapikey,
+      usepersonalkey, apikeyname, personalapikeyname, monthlylimit,
+      currentusage, isactive } = req.body;
+
+    const filter = { facultyid, colid, user };
+    const update = {
+      name, user, colid, facultyid, defaultapikey, personalapikey,
+      usepersonalkey, apikeyname, personalapikeyname, monthlylimit,
+      currentusage, isactive, updatedat: new Date()
+    };
+
+    const apikey = await gptapikeyds.findOneAndUpdate(filter, update, {
+      new: true, upsert: true, setDefaultsOnInsert: true
+    });
+
+    res.status(200).json({
+      success: true,
+      data: apikey,
+      message: "API key settings saved successfully"
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+exports.getapikeyds1 = async (req, res) => {
+  try {
+    const { colid, facultyid, includekeys } = req.query;
+    const apikey = await gptapikeyds.findOne({
+      colid: parseInt(colid),
+      facultyid: facultyid
+    });
+
+    if (!apikey) {
+      return res.status(404).json({
+        success: false,
+        message: "API key settings not found"
+      });
+    }
+
+    let response;
+    if (includekeys === 'true') {
+      response = apikey.toObject();
+    } else {
+      response = {
+        ...apikey.toObject(),
+        defaultapikey: apikey.defaultapikey ? '***HIDDEN***' : '',
+        personalapikey: apikey.personalapikey ? '***HIDDEN***' : ''
+      };
+    }
+
+    res.status(200).json({ success: true, data: response });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+exports.getactiveapikeyds1 = async (req, res) => {
+  try {
+    const { colid, facultyid } = req.query;
+    const apikey = await gptapikeyds.findOne({
+      colid: parseInt(colid),
+      facultyid: facultyid,
+      isactive: true
+    });
+
+    if (!apikey) {
+      return res.status(404).json({
+        success: false,
+        message: "No active API key found"
+      });
+    }
+
+    const activeKey = apikey.usepersonalkey && apikey.personalapikey
+      ? apikey.personalapikey
+      : apikey.defaultapikey;
+    const keyName = apikey.usepersonalkey && apikey.personalapikey
+      ? apikey.personalapikeyname
+      : apikey.apikeyname;
+
+    res.status(200).json({
+      success: true,
+      data: {
+        apikey: activeKey,
+        keyname: keyName,
+        usepersonalkey: apikey.usepersonalkey,
+        monthlylimit: apikey.monthlylimit,
+        currentusage: apikey.currentusage
+      }
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+exports.updateusageds1 = async (req, res) => {
+  try {
+    const { colid, facultyid, tokensused } = req.body;
+    const apikey = await gptapikeyds.findOneAndUpdate(
+      { colid: parseInt(colid), facultyid: facultyid },
+      {
+        $inc: { currentusage: tokensused },
+        lastusagedate: new Date(),
+        updatedat: new Date()
+      },
+      { new: true }
+    );
+
+    if (!apikey) {
+      return res.status(404).json({
+        success: false,
+        message: "API key settings not found"
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        currentusage: apikey.currentusage,
+        monthlylimit: apikey.monthlylimit,
+        remaining: apikey.monthlylimit - apikey.currentusage
+      },
+      message: "Usage updated successfully"
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+exports.generatequestionsds1 = async (req, res) => {
+  try {
+    const { name, user, colid, testid, generatedquestions,
+      topic, difficulty, questioncount, prompt, tokensused, cost } = req.body;
+
+    const logFilter = { testid, colid, user };
+    const logUpdate = {
+      name, user, testid, facultyid: user, colid,
+      prompt, topic, difficulty, questioncount,
+      tokensused: tokensused || 0,
+      cost: cost || 0,
+      success: true,
+      generatedat: new Date(),
+      createdat: new Date()
+    };
+
+    await aigenerationlogds.findOneAndUpdate(logFilter, logUpdate, {
+      new: true, upsert: true, setDefaultsOnInsert: true
+    });
+
+    res.status(200).json({
+      success: true,
+      data: generatedquestions,
+      message: "Questions generation logged successfully"
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+exports.checkstudenteligibility1 = async (req, res) => {
+  try {
+    const { testid, studentid } = req.params;
+
+    // Use aggregation to check eligibility
+    const pipeline = [
+      { $match: { _id: new mongoose.Types.ObjectId(testid) } },
+      {
+        $lookup: {
+          from: 'classenr1s',
+          let: { coursecode: '$coursecode', colid: '$colid' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$coursecode', '$$coursecode'] },
+                    { $eq: ['$colid', '$$colid'] },
+                    { $eq: ['$regno', studentid] },
+                    { $eq: ['$active', '1'] },
+                    { $eq: ['$status1', 'active'] }
+                  ]
+                }
+              }
+            }
+          ],
+          as: 'enrollment'
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          let: { regno: studentid },
+          pipeline: [
+            { $match: { $expr: { $eq: ['$regno', '$$regno'] } } },
+            { $project: { email: 1 } }
+          ],
+          as: 'userInfo'
+        }
+      },
+      {
+        $lookup: {
+          from: 'testsubmissionds1',
+          let: { testid: { $toString: '$_id' }, studentemail: { $arrayElemAt: ['$userInfo.email', 0] } },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$testid', '$$testid'] },
+                    { $eq: ['$studentid', '$$studentemail'] }
+                  ]
+                }
+              }
+            },
+            { $sort: { createdat: -1 } },
+            { $limit: 1 }
+          ],
+          as: 'submissions'
+        }
+      }
+    ];
+
+    const result = await testds1.aggregate(pipeline);
+
+    if (!result.length) {
+      return res.status(404).json({
+        success: false,
+        message: 'Test not found',
+        canTakeTest: false
+      });
+    }
+
+    const testData = result[0];
+    const enrollment = testData.enrollment[0];
+    const latestSubmission = testData.submissions[0];
+
+    if (!enrollment) {
+      return res.status(403).json({
+        success: false,
+        message: 'Student not enrolled in this course',
+        canTakeTest: false
+      });
+    }
+
+    const canTakeTest = !latestSubmission || latestSubmission.status === 'started';
+
+    return res.json({
+      success: true,
+      canTakeTest,
+      submissionCount: testData.submissions.length,
+      latestStatus: latestSubmission?.status || 'never-attempted',
+      studentInfo: {
+        name: enrollment.student,
+        regno: enrollment.regno,
+        program: enrollment.program
+      }
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};

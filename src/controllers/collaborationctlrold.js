@@ -14,78 +14,46 @@ const Consultancy = require('../Models/consultancy');
 // ======================
 // COLLABORATION POST CONTROLLERS
 // ======================
+
+// Create Collaboration Post
 exports.createcollaborationpost = async (req, res) => {
-  try {
-    const { 
-      title, 
-      description, 
-      projectId,
-      publicationId,
-      user, 
-      colid, 
-      department,
-      requiredSkills,
-      collaborationType,
-      maxCollaborators,
-      visibility,
-      deadline,
-      postFor, // ✅ NEW
-      otherType // ✅ NEW
-    } = req.body;
+    try {
+        const {
+            title, description, projectId, user, colid, department,
+            requiredSkills, collaborationType, maxCollaborators, visibility, deadline
+        } = req.body;
 
-    // Validation
-    if (postFor === 'other' && !otherType) {
-      return res.status(400).json({
-        success: false,
-        message: 'Other type is required when post is for other'
-      });
+        const newPost = await collaborationpostds.create({
+            title,
+            description,
+            projectId,
+            user,
+            colid,
+            department,
+            requiredSkills: requiredSkills || [],
+            collaborationType,
+            maxCollaborators: maxCollaborators || 3,
+            visibility: visibility || 'cross-college',
+            deadline
+        });
+
+        // Populate project details
+        await newPost.populate('projectId');
+
+        res.status(201).json({
+            success: true,
+            message: 'Collaboration post created successfully',
+            data: newPost
+        });
+    } catch (error) {
+        // res.status(500).json({
+        //     success: false,
+        //     message: 'Failed to create collaboration post',
+        //     error: error.message
+        // });
     }
-
-    if (postFor === 'project' && !projectId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Project ID is required when post is for project'
-      });
-    }
-
-    if (postFor === 'publication' && !publicationId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Publication ID is required when post is for publication'
-      });
-    }
-
-    const newPost = await collaborationpostds.create({
-      title,
-      description,
-      projectId,
-      publicationId,
-      user,
-      colid,
-      department,
-      requiredSkills: requiredSkills || [],
-      collaborationType,
-      maxCollaborators: maxCollaborators || 3,
-      visibility: visibility || 'cross-college',
-      deadline,
-      postFor,
-      otherType
-    });
-
-    res.status(201).json({
-      success: true,
-      message: 'Collaboration post created successfully',
-      data: newPost
-    });
-
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to create collaboration post',
-      error: error.message
-    });
-  }
 };
+
 // controllers/collaborationctlr.js - Enhanced to include owner profile
 exports.getcollaborationposts = async (req, res) => {
     try {
@@ -353,18 +321,10 @@ exports.getsentcollaborationrequests = async (req, res) => {
     }
 };
 
-// Accept Collaboration Request - FIXED
+// Accept Collaboration Request
 exports.acceptcollaborationrequest = async (req, res) => {
     try {
         const { requestId } = req.body;
-
-        // ✅ ADD: Validate required fields
-        if (!requestId) {
-            return res.status(400).json({
-                success: false,
-                message: 'requestId is required'
-            });
-        }
 
         const request = await collaborationrequestds.findById(requestId)
             .populate('postId');
@@ -391,11 +351,10 @@ exports.acceptcollaborationrequest = async (req, res) => {
         // Create chat room for collaboration
         const chatRoomId = `collab_${request.postId._id}_${Date.now()}`;
 
-        // ✅ FIXED: Handle case where postId might not have projectId for new model
-        const collaborationData = {
+        // Create active collaboration
+        const collaboration = await collaborationds.create({
             postId: request.postId._id,
-            targetType: request.postId.postFor || 'project', // ✅ NEW FIELD
-            targetId: request.postId.projectId || request.postId.publicationId || request.postId._id,
+            projectId: request.postId.projectId,
             participants: [
                 {
                     user: request.ownerUser,
@@ -409,15 +368,7 @@ exports.acceptcollaborationrequest = async (req, res) => {
                 }
             ],
             chatRoomId
-        };
-
-        // ✅ FIXED: Add projectId only if it exists
-        if (request.postId.projectId) {
-            collaborationData.projectId = request.postId.projectId;
-        }
-
-        // Create active collaboration
-        const collaboration = await collaborationds.create(collaborationData);
+        });
 
         // Update collaboration post
         await collaborationpostds.findByIdAndUpdate(
@@ -444,7 +395,6 @@ exports.acceptcollaborationrequest = async (req, res) => {
             message: 'Collaboration request accepted successfully',
             data: { collaboration, chatRoomId }
         });
-
     } catch (error) {
         // res.status(500).json({
         //     success: false,
@@ -454,18 +404,10 @@ exports.acceptcollaborationrequest = async (req, res) => {
     }
 };
 
-// Reject Collaboration Request - FIXED
+// Reject Collaboration Request
 exports.rejectcollaborationrequest = async (req, res) => {
     try {
         const { requestId, rejectionReason } = req.body;
-
-        // ✅ ADD: Validate required fields
-        if (!requestId) {
-            return res.status(400).json({
-                success: false,
-                message: 'requestId is required'
-            });
-        }
 
         const request = await collaborationrequestds.findById(requestId);
 
@@ -507,10 +449,7 @@ exports.rejectcollaborationrequest = async (req, res) => {
             message: 'Collaboration request rejected successfully',
             data: request
         });
-
     } catch (error) {
-        // ✅ FIXED: UNCOMMENTED ERROR HANDLING
-        // console.error('Reject collaboration request error:', error);
         // res.status(500).json({
         //     success: false,
         //     message: 'Failed to reject collaboration request',
@@ -518,7 +457,6 @@ exports.rejectcollaborationrequest = async (req, res) => {
         // });
     }
 };
-
 
 // ======================
 // COLLABORATION CONTROLLERS

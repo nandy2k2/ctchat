@@ -15,6 +15,8 @@ const testdsctlr = require("./controllers/testdsctlr.js");
 const testsubmissiondsctlr = require("./controllers/testsubmissiondsctlr.js");
 const collaborationctlr = require("./controllers/collaborationctlr.js");
 const userctlr = require("./controllers/userctlr.js");
+const testdsctlr1 = require("./controllers/testdsctlr1.js");
+const testsubmissiondsctlr1 = require("./controllers/testsubmissiondsctlr1.js");
 
 dotenv.config();
 
@@ -179,6 +181,32 @@ app.post("/api/v2/addworkexperience", collaborationctlr.addworkexperience);
 
 //user photo update
 app.post("/api/v2/updateuserphoto", userctlr.updateuserphoto)
+
+// Test Management Routes (Updated)
+app.post("/api/v2/createtestds1", testdsctlr1.createtestds1);
+app.get("/api/v2/gettestsbyuser1", testdsctlr1.gettestsbyuser1);
+app.post("/api/v2/updatetestds1", testdsctlr1.updatetestds1);
+app.get("/api/v2/deletetestds1", testdsctlr1.deletetestds1);
+app.post("/api/v2/generatequestionsds1", testdsctlr1.generatequestionsds1);
+app.post("/api/v2/publishtestds1", testdsctlr1.publishtestds1);
+app.get("/api/v2/getavailabletestsds1", testdsctlr1.getavailabletestsds1);
+app.get("/api/v2/gettesteliiblestudents1/:testid", testdsctlr1.gettesteliiblestudents1);
+app.post("/api/v2/allowstudentretake1", testdsctlr1.allowstudentretake1);
+app.get("/api/v2/checkstudenteligibility1/:testid/:studentid", testdsctlr1.checkstudenteligibility1);
+
+// API Key Management Routes
+app.post("/api/v2/createapikeyds1", testdsctlr1.createapikeyds1);
+app.get("/api/v2/getapikeyds1", testdsctlr1.getapikeyds1);
+app.get("/api/v2/getactiveapikeyds1", testdsctlr1.getactiveapikeyds1);
+app.post("/api/v2/updateusageds1", testdsctlr1.updateusageds1);
+
+// Test Submission Management Routes (Updated)
+app.post("/api/v2/createtestsubmissionds1", testsubmissiondsctlr1.createtestsubmissionds1);
+app.get("/api/v2/gettestsubmissionsbyuser1", testsubmissiondsctlr1.gettestsubmissionsbyuser1);
+app.get("/api/v2/gettestsubmissionsbytest1", testsubmissiondsctlr1.gettestsubmissionsbytest1);
+app.post("/api/v2/starttestds1", testsubmissiondsctlr1.starttestds1);
+app.post("/api/v2/submitanswerds1", testsubmissiondsctlr1.submitanswerds1);
+app.post("/api/v2/submittestds1", testsubmissiondsctlr1.submittestds1);
 
 
 // ======================

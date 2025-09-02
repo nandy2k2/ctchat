@@ -138,7 +138,7 @@ exports.enrollstudent = async (req, res) => {
 // Get Enrolled Students for Class
 exports.getenrolledstudents = async (req, res) => {
     try {
-        const { coursecode, colid, semester } = req.query;
+        const { coursecode, colid, semester, section } = req.query;
 
         const enrollments = await classenr1.find({
             coursecode,
@@ -566,11 +566,12 @@ exports.getstudentreportaggregate = async (req, res) => {
             }
         });
     } catch (error) {
-        // res.status(500).json({
-        //     success: false,
-        //     message: 'Failed to generate student report',
-        //     error: error.message
-        // });
+        console.error('Student report error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to generate student report',
+            error: error.message
+        });
     }
 };
 
@@ -701,49 +702,3 @@ exports.getsinglestudentrport = async (req, res) => {
     }
 };
 
-
-exports.getenrollments = async (req, res) => {
-  try {
-    const { colid, coursecode, year, user, status } = req.query;
-    if (!colid || !coursecode || !year) {
-      return res.status(400).json({ success: false, message: 'colid, coursecode, year are required' });
-    }
-
-    const match = {
-      colid: Number(colid),
-      coursecode,
-      year
-    };
-    if (user) match.user = user;
-
-    if (status === 'active') match.active = 'Yes';
-    if (status === 'pending') match.active = { $ne: 'Yes' };
-
-    const list = await classenr1.find(match).sort({ _id: -1 }).lean();
-    return res.json({ success: true, data: list });
-  } catch (e) {
-    return res.status(500).json({ success: false, message: 'Failed to fetch enrollments', error: e.message });
-  }
-};
-
-// PUT /api/v2/update-enrollment-status/:id
-// Body: { active: 'yes' | 'no', status1?: 'Active' | 'Pending' | 'Rejected' | string }
-exports.updateenrollmentstatus = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { active, status1 } = req.body;
-
-    const update = {};
-    if (typeof active !== 'undefined') update.active = active;
-    if (typeof status1 !== 'undefined') update.status1 = status1;
-
-    if (Object.keys(update).length === 0) {
-      return res.status(400).json({ success: false, message: 'No fields to update' });
-    }
-
-    await classenr1.findByIdAndUpdate(id, update);
-    return res.json({ success: true, message: 'Enrollment updated' });
-  } catch (e) {
-    return res.status(500).json({ success: false, message: 'Failed to update enrollment', error: e.message });
-  }
-};
