@@ -17,6 +17,8 @@ const collaborationctlr = require("./controllers/collaborationctlr.js");
 const userctlr = require("./controllers/userctlr.js");
 const testdsctlr1 = require("./controllers/testdsctlr1.js");
 const testsubmissiondsctlr1 = require("./controllers/testsubmissiondsctlr1.js");
+const authctlr = require("./controllers/authctlr.js");
+const enrollmentlinkdsctlr = require("./controllers/enrollmentlinkdsctlr.js");
 
 dotenv.config();
 
@@ -39,7 +41,9 @@ app.use(cors());
 // ======================
 
 // Authentication
-app.post("/api/v2/loginuser", coursedsctlr.loginuser);
+// app.post("/api/v2/loginuser", coursedsctlr.loginuser);
+app.post("/api/v2/loginuser", authctlr.loginuser);
+app.post("/api/v2/register", authctlr.registeruser);
 
 // Course Management
 app.post("/api/v2/createcourse", coursedsctlr.createcourse);
@@ -207,6 +211,16 @@ app.get("/api/v2/gettestsubmissionsbytest1", testsubmissiondsctlr1.gettestsubmis
 app.post("/api/v2/starttestds1", testsubmissiondsctlr1.starttestds1);
 app.post("/api/v2/submitanswerds1", testsubmissiondsctlr1.submitanswerds1);
 app.post("/api/v2/submittestds1", testsubmissiondsctlr1.submittestds1);
+
+// Enrollment link APIs
+app.post("/api/v2/create-enrollment-link", enrollmentlinkdsctlr.createenrollmentlink);
+app.get("/api/v2/enrollment-links", enrollmentlinkdsctlr.getenrollmentlinksbycreator);
+app.get("/api/v2/enrollment-link/:token", enrollmentlinkdsctlr.resolveenrollmenttoken);
+app.put("/api/v2/enrollment-link/:token/revoke", enrollmentlinkdsctlr.revokeenrollmentlink);
+
+// Enrollment listing + status change
+app.get("/api/v2/getenrollments", attendancectlr.getenrollments);
+app.put("/api/v2/update-enrollment-status/:id", attendancectlr.updateenrollmentstatus);
 
 
 // ======================
