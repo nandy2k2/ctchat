@@ -145,9 +145,36 @@ exports.gettesteliiblestudents1 = async (req, res) => {
           from: 'testsubmissionds1',
           let: { testid: { $toString: '$_id' } },
           pipeline: [
-            { $match: { $expr: { $eq: ['$testid', '$$testid'] } } }
+            { $match: { $expr: { $eq: ['$testid', '$$testid'] } } },
+            {
+              $group: {
+                _id: '$studentid',
+                submissionCount: { $sum: 1 },
+                latestSubmission: { $max: '$createdat' },
+                status: { $last: '$status' }
+              }
+            }
           ],
-          as: 'allSubmissions'
+          as: 'submissions'
+        }
+      },
+      {
+        $project: {
+          testtitle: 1,
+          coursecode: 1,
+          enrolledStudents: 1,
+          submissionCounts: {
+            $arrayToObject: {
+              $map: {
+                input: '$submissions',
+                as: 'sub',
+                in: {
+                  k: '$$sub._id',
+                  v: '$$sub.submissionCount'
+                }
+              }
+            }
+          }
         }
       }
     ];
@@ -159,111 +186,25 @@ exports.gettesteliiblestudents1 = async (req, res) => {
     }
 
     const testData = result[0];
-    
-    // Process submissions to create submission counts manually
-    const submissionCounts = {};
-    const submissionData = {};
-    
-    testData.allSubmissions.forEach(submission => {
-      // Check all possible identifier fields
-      const identifiers = [
-        submission.studentid,
-        submission.regno,
-        submission.user,
-        submission.name,
-        submission.email
-      ].filter(id => id && id.toString().trim() !== '');
-      
-      // Increment count for all valid identifiers
-      identifiers.forEach(id => {
-        const key = id.toString();
-        submissionCounts[key] = (submissionCounts[key] || 0) + 1;
-        
-        // Store latest submission data
-        if (!submissionData[key] || 
-            new Date(submission.createdat) > new Date(submissionData[key].createdat)) {
-          submissionData[key] = submission;
-        }
-      });
-    });
-
-    // Helper function to get submission count for a student using multiple possible identifiers
-    const getSubmissionCount = (student) => {
-      const possibleIds = [
-        student.regno,
-        student.email,
-        student.student,
-        student.user,
-        student.name
-      ].filter(id => id && id.toString().trim() !== '');
-
-      let maxCount = 0;
-      for (const id of possibleIds) {
-        const count = submissionCounts[id.toString()] || 0;
-        if (count > maxCount) {
-          maxCount = count;
-        }
-      }
-      return maxCount;
-    };
-
-    // Helper function to get latest submission data for a student
-    const getLatestSubmission = (student) => {
-      const possibleIds = [
-        student.regno,
-        student.email,
-        student.student,
-        student.user,
-        student.name
-      ].filter(id => id && id.toString().trim() !== '');
-
-      let latestSubmission = null;
-      let latestDate = null;
-
-      for (const id of possibleIds) {
-        const submission = submissionData[id.toString()];
-        if (submission) {
-          const submissionDate = new Date(submission.createdat);
-          if (!latestDate || submissionDate > latestDate) {
-            latestDate = submissionDate;
-            latestSubmission = submission;
-          }
-        }
-      }
-      
-      return latestSubmission;
-    };
-
-    const eligibleStudents = testData.enrolledStudents.map(student => {
-      const submissionCount = getSubmissionCount(student);
-      const latestSubmission = getLatestSubmission(student);
-      
-      return {
-        studentId: student.regno || student.email || student.student,
-        studentName: student.student,
-        regno: student.regno,
-        name: student.student,
-        email: student.email,
-        user: student.user,
+    const eligibleStudents = testData.enrolledStudents.map(student => ({
+      studentId: student.regno,
+      studentName: student.student,
+      regno: student.regno,
+      name: student.student,
+      year: student.year,
+      program: student.program,
+      semester: student.semester,
+      classgroup: student.classgroup,
+      submissionCount: testData.submissionCounts[student.email] || 0,
+      hasSubmission: (testData.submissionCounts[student.email] || 0) > 0,
+      enrollmentData: {
         year: student.year,
         program: student.program,
         semester: student.semester,
         classgroup: student.classgroup,
-        submissionCount: submissionCount,
-        hasSubmitted: submissionCount > 0,
-        hasSubmission: submissionCount > 0, // Alias for compatibility
-        latestSubmission: latestSubmission,
-        status: submissionCount > 0 ? 'Has Submitted' : 'Not Attempted',
-        lastSubmissionDate: latestSubmission ? latestSubmission.createdat : null,
-        enrollmentData: {
-          year: student.year,
-          program: student.program,
-          semester: student.semester,
-          classgroup: student.classgroup,
-          gender: student.gender
-        }
-      };
-    });
+        gender: student.gender
+      }
+    }));
 
     return res.json({
       success: true,
@@ -273,20 +214,10 @@ exports.gettesteliiblestudents1 = async (req, res) => {
       testInfo: {
         title: testData.testtitle,
         coursecode: testData.coursecode
-      },
-      debug: {
-        totalSubmissions: testData.allSubmissions.length,
-        submissionCountsCreated: Object.keys(submissionCounts).length
       }
     });
-
   } catch (error) {
-    // console.error('Error in gettesteliiblestudents1:', error);
-    // res.status(400).json({ 
-    //   success: false, 
-    //   message: error.message,
-    //   error: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    // });
+    res.status(400).json({ success: false, message: error.message });
   }
 };
 

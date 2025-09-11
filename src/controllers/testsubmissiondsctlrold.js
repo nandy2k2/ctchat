@@ -83,7 +83,7 @@ exports.gettestsubmissionsbytest = async (req, res) => {
     }
 };
 
-// Start Test Session
+// Start Test Session - FIXED for retakes
 exports.starttestds = async (req, res) => {
     try {
         const { testid, studentid, colid, name, user, classid } = req.body;
@@ -111,28 +111,42 @@ exports.starttestds = async (req, res) => {
             });
         }
         
-        // Check if student has already attempted
+        // FIXED: Check existing submission and allow retake based on status
         const existingSubmission = await testsubmissionds.findOne({ 
             testid, 
             studentid, 
             colid: parseInt(colid) 
         });
         
-        if (existingSubmission && !test.allowretake) {
-            return res.status(400).json({
-                success: false,
-                message: "Test already attempted"
-            });
+        if (existingSubmission) {
+            // Allow retake if:
+            // 1. Test allows retakes OR
+            // 2. Status is 'started' (faculty allowed retake)
+            if (!test.allowretake && existingSubmission.status !== 'started') {
+                return res.status(400).json({
+                    success: false,
+                    message: "Test already attempted and retake not allowed"
+                });
+            }
         }
         
+        // FIXED: Always upsert to handle both new attempts and retakes
         const filter = { testid, studentid, colid: parseInt(colid) };
         const update = {
-            name, user, testid, studentid, classid, colid: parseInt(colid),
+            name, 
+            user, 
+            testid, 
+            studentid, 
+            classid, 
+            colid: parseInt(colid),
             testtitle: test.testtitle,
             starttime: new Date(),
-            status: 'started',
-            timeremaining: test.duration * 60, // convert to seconds
-            createdat: new Date(),
+            status: 'started', // Always start fresh
+            timeremaining: test.duration * 60,
+            answers: [], // Clear previous answers for retake
+            totalscore: 0, // Reset score
+            percentage: 0, // Reset percentage
+            createdat: existingSubmission ? existingSubmission.createdat : new Date(), // Preserve original creation date
             updatedat: new Date()
         };
 
@@ -146,15 +160,13 @@ exports.starttestds = async (req, res) => {
             success: true,
             data: submission,
             test: test,
-            message: "Test session started successfully"
+            message: `Test session started successfully ${existingSubmission ? '(Retake)' : '(First Attempt)'}`
         });
+        
     } catch (error) {
-        // res.status(400).json({
-        //     success: false,
-        //     message: error.message
-        // });
     }
 };
+
 
 // Submit Answer
 exports.submitanswerds = async (req, res) => {

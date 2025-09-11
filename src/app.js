@@ -148,6 +148,7 @@ app.post("/api/v2/starttestds", testsubmissiondsctlr.starttestds);
 app.post("/api/v2/submitanswerds", testsubmissiondsctlr.submitanswerds);
 app.post("/api/v2/submittestds", testsubmissiondsctlr.submittestds);
 
+
 //student setting
 app.get("/api/v2/gettesteliiblestudents/:testid", testdsctlr.gettesteliiblestudents);
 app.post("/api/v2/allowstudentretake", testdsctlr.allowstudentretake);
@@ -214,6 +215,7 @@ app.get("/api/v2/gettestsubmissionsbytest1", testsubmissiondsctlr1.gettestsubmis
 app.post("/api/v2/starttestds1", testsubmissiondsctlr1.starttestds1);
 app.post("/api/v2/submitanswerds1", testsubmissiondsctlr1.submitanswerds1);
 app.post("/api/v2/submittestds1", testsubmissiondsctlr1.submittestds1);
+app.post("/api/v2/getstudentattemptscount", testsubmissiondsctlr1.getstudentattemptscount);
 
 // Enrollment link APIs
 app.post("/api/v2/create-enrollment-link", enrollmentlinkdsctlr.createenrollmentlink);

@@ -468,37 +468,8 @@ exports.submittestds1 = async (req, res) => {
       message: "Test submitted successfully"
     });
   } catch (error) {
-    // console.log(error);
+    console.log(error);
     
-    // res.status(400).json({ success: false, message: error.message });
-  }
-};
-
-// Add this endpoint to your backend
-exports.getstudentattemptscount = async (req, res) => {
-  try {
-    const { testid, studentid, colid } = req.query;
-    
-    const attemptCount = await testsubmissionds1.countDocuments({
-      testid: testid,
-      $or: [
-        { studentid: studentid },
-        { user: studentid },
-        { regno: studentid }
-      ],
-      colid: colid,
-      status: 'submitted'
-    });
-    
-    res.json({
-      success: true,
-      data: { attemptCount }
-    });
-    
-  } catch (error) {
-    // res.status(400).json({
-    //   success: false,
-    //   message: error.message
-    // });
+    res.status(400).json({ success: false, message: error.message });
   }
 };
