@@ -1,3 +1,4 @@
+const User = require('../Models/user');
 const mfaccourses = require('../Models/mfaccourses');
 const classenr1 = require('../Models/classenr1');
 const massignments = require('../Models/massignments');
@@ -5,7 +6,51 @@ const massignsubmit = require('../Models/massignsubmit');
 const msyllabus = require('../Models/msyllabus');
 const mcoursematerial = require('../Models/mcoursematerial');
 const messageds = require('../Models/messageds');
-const Awsconfig = require('../Models/awsconfig');
+const Awsconfig = require('../Models/awsconfig'); // Add this import
+
+// ======================
+// USER AUTHENTICATION CONTROLLERS
+// ======================
+
+exports.loginuser = async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        const user = await User.findOne({ email, password });
+        if (!user) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid email or password'
+            });
+        }
+
+        return res.json({
+            success: true,
+            message: 'Login successful',
+            data: {
+                user: {
+                    id: user._id,
+                    email: user.email,
+                    name: user.name,
+                    role: user.role,
+                    regno: user.regno,
+                    department: user.department,
+                    colid: user.colid,
+                    photo: user.photo,
+                    programcode: user.programcode,
+                    semester: user.semester,
+                    section: user.section
+                }
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Login failed',
+            error: error.message
+        });
+    }
+};
 
 // ======================
 // COURSE MANAGEMENT CONTROLLERS
@@ -31,11 +76,11 @@ exports.createcourse = async (req, res) => {
             data: newCourse
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Failed to create course',
-            error: error.message
-        });
+        // res.status(500).json({
+        //     success: false,
+        //     message: 'Failed to create course',
+        //     error: error.message
+        // });
     }
 };
 
@@ -51,11 +96,11 @@ exports.getcoursebyfaculty = async (req, res) => {
             data: courses
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Failed to retrieve faculty courses',
-            error: error.message
-        });
+        // res.status(500).json({
+        //     success: false,
+        //     message: 'Failed to retrieve faculty courses',
+        //     error: error.message
+        // });
     }
 };
 
@@ -63,7 +108,7 @@ exports.getcoursesbystudent = async (req, res) => {
     try {
         const { regno, colid } = req.query;
 
-        const enrollments = await classenr1.find({regno, colid: parseInt(colid), active: 'Yes' });
+        const enrollments = await classenr1.find({ regno, colid: parseInt(colid) });
         
         res.json({
             success: true,
@@ -71,11 +116,11 @@ exports.getcoursesbystudent = async (req, res) => {
             data: enrollments
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Failed to retrieve student courses',
-            error: error.message
-        });
+        // res.status(500).json({
+        //     success: false,
+        //     message: 'Failed to retrieve student courses',
+        //     error: error.message
+        // });
     }
 };
 
@@ -109,11 +154,11 @@ exports.createassignment = async (req, res) => {
             data: newAssignment
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Failed to create assignment',
-            error: error.message
-        });
+        // res.status(500).json({
+        //     success: false,
+        //     message: 'Failed to create assignment',
+        //     error: error.message
+        // });
     }
 };
 
@@ -132,11 +177,11 @@ exports.getassignmentsbycourse = async (req, res) => {
             data: assignments
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Failed to retrieve assignments',
-            error: error.message
-        });
+        // res.status(500).json({
+        //     success: false,
+        //     message: 'Failed to retrieve assignments',
+        //     error: error.message
+        // });
     }
 };
 
@@ -170,11 +215,11 @@ exports.getassignmentsfirstudent = async (req, res) => {
             data: assignmentsWithSubmissions
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Failed to retrieve student assignments',
-            error: error.message
-        });
+        // res.status(500).json({
+        //     success: false,
+        //     message: 'Failed to retrieve student assignments',
+        //     error: error.message
+        // });
     }
 };
 
@@ -204,11 +249,11 @@ exports.submitassignment = async (req, res) => {
             data: newSubmission
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Failed to submit assignment',
-            error: error.message
-        });
+        // res.status(500).json({
+        //     success: false,
+        //     message: 'Failed to submit assignment',
+        //     error: error.message
+        // });
     }
 };
 
@@ -224,11 +269,11 @@ exports.getassignmentsubmissions = async (req, res) => {
             data: submissions
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Failed to retrieve submissions',
-            error: error.message
-        });
+        // res.status(500).json({
+        //     success: false,
+        //     message: 'Failed to retrieve submissions',
+        //     error: error.message
+        // });
     }
 };
 
@@ -261,11 +306,11 @@ exports.createsyllabus = async (req, res) => {
             data: newSyllabus
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Failed to create syllabus',
-            error: error.message
-        });
+        // res.status(500).json({
+        //     success: false,
+        //     message: 'Failed to create syllabus',
+        //     error: error.message
+        // });
     }
 };
 
@@ -284,11 +329,11 @@ exports.getsyllabusbycourse = async (req, res) => {
             data: syllabus
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Failed to retrieve syllabus',
-            error: error.message
-        });
+        // res.status(500).json({
+        //     success: false,
+        //     message: 'Failed to retrieve syllabus',
+        //     error: error.message
+        // });
     }
 };
 
@@ -316,11 +361,11 @@ exports.marksyllabuscomplete = async (req, res) => {
             data: updatedSyllabus
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Failed to update syllabus',
-            error: error.message
-        });
+        // res.status(500).json({
+        //     success: false,
+        //     message: 'Failed to update syllabus',
+        //     error: error.message
+        // });
     }
 };
 
@@ -355,11 +400,11 @@ exports.createcoursematerial = async (req, res) => {
             data: newMaterial
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Failed to create course material',
-            error: error.message
-        });
+        // res.status(500).json({
+        //     success: false,
+        //     message: 'Failed to create course material',
+        //     error: error.message
+        // });
     }
 };
 
@@ -378,11 +423,11 @@ exports.getcoursematerialsbycourse = async (req, res) => {
             data: materials
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Failed to retrieve course materials',
-            error: error.message
-        });
+        // res.status(500).json({
+        //     success: false,
+        //     message: 'Failed to retrieve course materials',
+        //     error: error.message
+        // });
     }
 };
 
@@ -417,11 +462,11 @@ exports.savemessage = async (req, res) => {
             }
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Failed to save message',
-            error: error.message
-        });
+        // res.status(500).json({
+        //     success: false,
+        //     message: 'Failed to save message',
+        //     error: error.message
+        // });
     }
 };
 
@@ -450,11 +495,11 @@ exports.getmessagesbyroom = async (req, res) => {
             data: messages
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Failed to retrieve messages',
-            error: error.message
-        });
+        // res.status(500).json({
+        //     success: false,
+        //     message: 'Failed to retrieve messages',
+        //     error: error.message
+        // });
     }
 };
 
@@ -471,39 +516,10 @@ exports.getawsconfigbycolid = async (req, res) => {
             data: awsConfig
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Failed to retrieve AWS config',
-            error: error.message
-        });
+        // res.status(500).json({
+        //     success: false,
+        //     message: 'Failed to retrieve AWS config',
+        //     error: error.message
+        // });
     }
-};
-
-
-// checking the student is allready enrolled or not 
-exports.checkexistingenrollment = async (req, res) => {
-  try {
-    const { colid, regno, student, coursecode, course, user } = req.query;
-    
-    const existingEnrollment = await classenr1.findOne({
-      colid: parseInt(colid),
-      regno,
-      student,
-      coursecode,
-      course,
-      user
-    });
-
-    res.json({
-      success: true,
-      exists: !!existingEnrollment,
-      enrollment: existingEnrollment || null
-    });
-  } catch (error) {
-    // res.status(500).json({
-    //   success: false,
-    //   message: 'Failed to check enrollment',
-    //   error: error.message
-    // });
-  }
 };

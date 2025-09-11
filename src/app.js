@@ -66,6 +66,9 @@ app.put("/api/v2/marksyllabuscomplete/:id", coursedsctlr.marksyllabuscomplete);
 app.post("/api/v2/createcoursematerial", coursedsctlr.createcoursematerial);
 app.get("/api/v2/getcoursematerialsbycourse", coursedsctlr.getcoursematerialsbycourse);
 
+// checking route for student enrollment
+app.get('/api/v2/checkexistingenrollment', coursedsctlr.checkexistingenrollment);
+
 // Message Management
 app.post("/api/v2/savemessage", coursedsctlr.savemessage);
 app.get("/api/v2/getmessagesbyroom/:room", coursedsctlr.getmessagesbyroom);

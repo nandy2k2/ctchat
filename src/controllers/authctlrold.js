@@ -47,7 +47,7 @@ exports.registeruser = async (req, res) => {
       department, admissionyear,
       regno, programcode, semester, section, gender,
       photo, expotoken, category, address, quota, user: usertype,
-      addedby, status1, comments, status, enrollcolid
+      addedby, status1, comments, status
     } = req.body;
 
     // Basic validations
@@ -65,9 +65,7 @@ exports.registeruser = async (req, res) => {
 
     // Resolve colid
     let colid;
-    if(enrollcolid){
-      colid = parseInt(enrollcolid, 10);
-    } else if (joinType === 'individual') {
+    if (joinType === 'individual') {
       colid = 111362;
     } else if (joinType === 'withInstitute') {
       if (!instituteCode) return res.status(400).json({ success: false, message: 'instituteCode is required' });
