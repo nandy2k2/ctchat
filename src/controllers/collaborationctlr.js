@@ -353,105 +353,141 @@ exports.getsentcollaborationrequests = async (req, res) => {
     }
 };
 
-// Accept Collaboration Request - FIXED
+// Accept Collaboration Request - FIXED TO HANDLE EXISTING ROOMS
 exports.acceptcollaborationrequest = async (req, res) => {
-    try {
-        const { requestId } = req.body;
+  try {
+    const { requestId } = req.body;
 
-        // ✅ ADD: Validate required fields
-        if (!requestId) {
-            return res.status(400).json({
-                success: false,
-                message: 'requestId is required'
-            });
-        }
-
-        const request = await collaborationrequestds.findById(requestId)
-            .populate('postId');
-
-        if (!request) {
-            return res.status(404).json({
-                success: false,
-                message: 'Collaboration request not found'
-            });
-        }
-
-        if (request.status !== 'pending') {
-            return res.status(400).json({
-                success: false,
-                message: 'Request has already been processed'
-            });
-        }
-
-        // Update request status
-        request.status = 'accepted';
-        request.respondedAt = new Date();
-        await request.save();
-
-        // Create chat room for collaboration
-        const chatRoomId = `collab_${request.postId._id}_${Date.now()}`;
-
-        // ✅ FIXED: Handle case where postId might not have projectId for new model
-        const collaborationData = {
-            postId: request.postId._id,
-            targetType: request.postId.postFor || 'project', // ✅ NEW FIELD
-            targetId: request.postId.projectId || request.postId.publicationId || request.postId._id,
-            participants: [
-                {
-                    user: request.ownerUser,
-                    colid: request.ownerColid,
-                    role: 'Owner'
-                },
-                {
-                    user: request.requesterUser,
-                    colid: request.requesterColid,
-                    role: request.requestedRole
-                }
-            ],
-            chatRoomId
-        };
-
-        // ✅ FIXED: Add projectId only if it exists
-        if (request.postId.projectId) {
-            collaborationData.projectId = request.postId.projectId;
-        }
-
-        // Create active collaboration
-        const collaboration = await collaborationds.create(collaborationData);
-
-        // Update collaboration post
-        await collaborationpostds.findByIdAndUpdate(
-            request.postId._id,
-            { $inc: { currentCollaborators: 1 } }
-        );
-
-        // Create notification for requester
-        await notificationds.create({
-            recipientUser: request.requesterUser,
-            recipientColid: request.requesterColid,
-            type: 'request_accepted',
-            title: 'Collaboration Request Accepted',
-            message: `Your collaboration request has been accepted!`,
-            referenceId: collaboration._id,
-            referenceType: 'Collaboration',
-            redirectUrl: `/collaboration/chat/${chatRoomId}`,
-            senderUser: request.ownerUser,
-            senderColid: request.ownerColid
-        });
-
-        res.json({
-            success: true,
-            message: 'Collaboration request accepted successfully',
-            data: { collaboration, chatRoomId }
-        });
-
-    } catch (error) {
-        // res.status(500).json({
-        //     success: false,
-        //     message: 'Failed to accept collaboration request',
-        //     error: error.message
-        // });
+    // Validate required fields
+    if (!requestId) {
+      return res.status(400).json({
+        success: false,
+        message: 'requestId is required'
+      });
     }
+
+    const request = await collaborationrequestds.findById(requestId)
+      .populate('postId');
+
+    if (!request) {
+      return res.status(404).json({
+        success: false,
+        message: 'Collaboration request not found'
+      });
+    }
+
+    if (request.status !== 'pending') {
+      return res.status(400).json({
+        success: false,
+        message: 'Request has already been processed'
+      });
+    }
+
+    // Update request status
+    request.status = 'accepted';
+    request.respondedAt = new Date();
+    await request.save();
+
+    // ✅ NEW: Check if collaboration already exists for this post
+    let existingCollaboration = await collaborationds.findOne({
+      postId: request.postId._id,
+      status: 'active'
+    });
+
+    let chatRoomId;
+    let collaboration;
+
+    if (existingCollaboration) {
+      // ✅ Add new participant to existing collaboration
+      const newParticipant = {
+        user: request.requesterUser,
+        colid: request.requesterColid,
+        role: request.requestedRole,
+        joinedAt: new Date()
+      };
+
+      // Check if participant already exists (safety check)
+      const participantExists = existingCollaboration.participants.some(
+        p => p.user === request.requesterUser && p.colid === request.requesterColid
+      );
+
+      if (!participantExists) {
+        existingCollaboration.participants.push(newParticipant);
+        existingCollaboration.lastActivity = new Date();
+        await existingCollaboration.save();
+      }
+
+      collaboration = existingCollaboration;
+      chatRoomId = existingCollaboration.chatRoomId;
+    } else {
+      // ✅ Create new collaboration room
+      chatRoomId = `collab_${request.postId._id}_${Date.now()}`;
+
+      const collaborationData = {
+        postId: request.postId._id,
+        targetType: request.postId.postFor || 'project',
+        targetId: request.postId.projectId || request.postId.publicationId || request.postId._id,
+        participants: [
+          {
+            user: request.ownerUser,
+            colid: request.ownerColid,
+            role: 'Owner'
+          },
+          {
+            user: request.requesterUser,
+            colid: request.requesterColid,
+            role: request.requestedRole
+          }
+        ],
+        chatRoomId
+      };
+
+      // Add projectId only if it exists
+      if (request.postId.projectId) {
+        collaborationData.projectId = request.postId.projectId;
+      }
+
+      collaboration = await collaborationds.create(collaborationData);
+    }
+
+    // Update collaboration post
+    await collaborationpostds.findByIdAndUpdate(
+      request.postId._id,
+      { $inc: { currentCollaborators: 1 } }
+    );
+
+    // Create notification for requester
+    await notificationds.create({
+      recipientUser: request.requesterUser,
+      recipientColid: request.requesterColid,
+      type: 'request_accepted',
+      title: 'Collaboration Request Accepted',
+      message: `Your collaboration request has been accepted! ${existingCollaboration ? 'You have been added to the existing collaboration room.' : 'A new collaboration room has been created.'}`,
+      referenceId: collaboration._id,
+      referenceType: 'Collaboration',
+      redirectUrl: `/collaboration/chat/${chatRoomId}`,
+      senderUser: request.ownerUser,
+      senderColid: request.ownerColid
+    });
+
+    res.json({
+      success: true,
+      message: `Collaboration request accepted successfully. ${existingCollaboration ? 'Added to existing room.' : 'New room created.'}`,
+      data: { 
+        collaboration, 
+        chatRoomId,
+        isNewRoom: !existingCollaboration
+      }
+    });
+
+  } catch (error) {
+    // console.error('Accept collaboration request error:', error);
+    // res.status(500).json({
+    //   success: false,
+    //   message: 'Failed to accept collaboration request',
+    //   error: error.message
+    // });
+  }
 };
 
 // Reject Collaboration Request - FIXED

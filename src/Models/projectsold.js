@@ -57,8 +57,7 @@ const bookschema = new mongoose.Schema({
         type: String,
         required: [true,'Please enter duration'],
         unique: false
-    },
-    doclink: {type: String}
+    }
 })
 //
 const Project=mongoose.model('Project',bookschema);

@@ -9,8 +9,7 @@ exports.createproject = async (req, res) => {
     try {
         const { 
             name, user, colid, project, agency, type, yop, 
-            department, funds, status1, comments, level, duration,
-            doclink 
+            department, funds, status1, comments, level, duration 
         } = req.body;
 
         const newProject = await Project.create({
@@ -26,8 +25,7 @@ exports.createproject = async (req, res) => {
             status1,
             comments,
             level,
-            duration,
-            doclink
+            duration
         });
 
         res.status(201).json({
