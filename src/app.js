@@ -20,6 +20,10 @@ const testsubmissiondsctlr1 = require("./controllers/testsubmissiondsctlr1.js");
 const authctlr = require("./controllers/authctlr.js");
 const enrollmentlinkdsctlr = require("./controllers/enrollmentlinkdsctlr.js");
 const aivideoanalysisctlr = require('./controllers/aivideoanalysisctlr.js');
+const generateclassctlr = require('./controllers/generateclassctlr');
+const schedule = require('node-schedule');
+const classnew = require('./Models/classnew.js');
+const classenr1 = require('./Models/classenr1.js');
 
 dotenv.config();
 
@@ -33,9 +37,130 @@ const io = new Server(server, {
 });
 
 const PORT = process.env.PORT || 3000;
+const autoTriggeredClasses = new Map();
+const classRoomMapping = new Map();
 
 app.use(express.json());
 app.use(cors());
+
+// ✅ AUTO-TRIGGER: Utility functions
+const generateAIChatRoom = (coursecode) => {
+  if (!coursecode) return null;
+  return `ai-chat-${coursecode.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+};
+
+const isWithinClassWindow = (classDate, classTime) => {
+  if (!classDate || !classTime) return false;
+  
+  const now = new Date();
+  const classDateTime = new Date(classDate);
+  const [hours, minutes] = classTime.split(':').map(Number);
+  classDateTime.setHours(hours, minutes, 0, 0);
+  
+  const windowStart = new Date(classDateTime.getTime() - 15 * 60 * 1000);
+  const windowEnd = new Date(classDateTime.getTime() + 45 * 60 * 1000);
+  
+  return now >= windowStart && now <= windowEnd;
+};
+
+const autoTriggerAIAnalysis = async (classItem) => {
+  try {
+    if (autoTriggeredClasses.has(classItem._id.toString())) {
+      return;
+    }
+    
+    const existingAnalysis = await aivideoanalysisds.findOne({
+      classid: classItem._id,
+      user: classItem.user,
+      colid: classItem.colid
+    });
+    
+    if (existingAnalysis && ['completed', 'searching', 'analyzing', 'generating'].includes(existingAnalysis.status)) {
+      return;
+    }
+    
+    const roomId = generateAIChatRoom(classItem.coursecode);
+    classRoomMapping.set(roomId, classItem._id.toString());
+    
+    autoTriggeredClasses.set(classItem._id.toString(), {
+      triggeredAt: new Date(),
+      status: 'auto-triggered',
+      roomId: roomId,
+      topic: classItem.topic,
+      coursecode: classItem.coursecode
+    });
+    
+    const mockReq = {
+      body: {
+        classid: classItem._id,
+        user: classItem.user,
+        colid: classItem.colid
+      },
+      app: { get: () => io }
+    };
+    
+    const mockRes = {
+      json: () => {},
+      status: () => ({ json: () => {} })
+    };
+    
+    await aivideoanalysisctlr.processaivideoanalysis(mockReq, mockRes);
+    
+  } catch (error) {
+    autoTriggeredClasses.delete(classItem._id.toString());
+  }
+};
+
+
+// ✅ AUTO-TRIGGER: Scheduled job (runs every minute) - WHOLE DAY analysis
+schedule.scheduleJob('*/1 * * * *', async () => {
+  try {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+    
+    const todaysClasses = await classnew.find({
+      classdate: { $gte: today, $lt: tomorrow },
+      topic: { $exists: true, $ne: '', $ne: null },
+      classtime: { $exists: true, $ne: '', $ne: null }
+    });
+    
+    for (const classItem of todaysClasses) {
+      const hasEnrollments = await classenr1.findOne({
+        coursecode: classItem.coursecode,
+        colid: classItem.colid,
+        active: 'Yes'
+      });
+      
+      if (hasEnrollments) {
+        const roomId = generateAIChatRoom(classItem.coursecode);
+        if (!classRoomMapping.has(roomId)) {
+          classRoomMapping.set(roomId, classItem._id.toString());
+        }
+      }
+    }
+    
+    const validRoomIds = new Set();
+    for (const classItem of todaysClasses) {
+      const roomId = generateAIChatRoom(classItem.coursecode);
+      validRoomIds.add(roomId);
+    }
+    
+    for (const [roomId] of classRoomMapping) {
+      if (!validRoomIds.has(roomId)) {
+        classRoomMapping.delete(roomId);
+        const classId = classRoomMapping.get(roomId);
+        if (classId && autoTriggeredClasses.has(classId)) {
+          autoTriggeredClasses.delete(classId);
+        }
+      }
+    }
+    
+  } catch (error) {
+    // Handle error silently
+  }
+});
+
 
 // ======================
 // API ENDPOINTS
@@ -234,6 +359,45 @@ app.post("/api/v2/processaivideoanalysis", aivideoanalysisctlr.processaivideoana
 app.get("/api/v2/getaivideoanalysisbyuser", aivideoanalysisctlr.getaivideoanalysisbyuser);
 app.get("/api/v2/getaichatmessages/:chatRoomId", aivideoanalysisctlr.getaichatmessages);
 app.delete("/api/v2/deleteaivideoanalysis/:id", aivideoanalysisctlr.deleteaivideoanalysis);
+
+// Ai generated classes and assesment
+app.post("/api/v2/generateclassschedule", generateclassctlr.generateclassschedule);
+app.post("/api/v2/saveClassesAndAssessments", generateclassctlr.saveClassesAndAssessments);
+app.get("/api/v2/getTopicsCoveredUpToDate", generateclassctlr.getTopicsCoveredUpToDate);
+app.post("/api/v2/confirmclassschedule", generateclassctlr.confirmclassschedule);
+app.put("/api/v2/updateclass/:id", attendancectlr.updateclass);
+app.delete("/api/v2/deleteclass/:id", attendancectlr.deleteclass);
+
+
+
+// ✅ NEW: Auto-trigger status API
+app.get('/api/v2/autotrigger/status', (req, res) => {
+  const { coursecode, colid } = req.query;
+  
+  if (coursecode) {
+    const roomId = generateAIChatRoom(coursecode);
+    const classId = classRoomMapping.get(roomId);
+    const triggerInfo = classId ? autoTriggeredClasses.get(classId) : null;
+    
+    res.json({
+      success: true,
+      roomId,
+      classId,
+      autoTriggered: !!triggerInfo,
+      triggerInfo
+    });
+  } else {
+    res.json({
+      success: true,
+      totalAutoTriggered: autoTriggeredClasses.size,
+      triggeredClasses: Array.from(autoTriggeredClasses.entries()).map(([id, info]) => ({
+        classId: id,
+        ...info
+      }))
+    });
+  }
+});
+
 
 
 // ======================

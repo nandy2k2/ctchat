@@ -2,6 +2,9 @@ const classnew = require('../Models/classnew');
 const attendancenew = require('../Models/attendancenew');
 const classenr1 = require('../Models/classenr1');
 const User = require('../Models/user');
+const mongoose = require('mongoose');
+const testds1 = require('../Models/testds1');
+const gptapikeyds = require("../Models/gptapikeyds");
 
 // ======================
 // CLASS CONTROLLERS
@@ -10,10 +13,10 @@ const User = require('../Models/user');
 // Create Class
 exports.createclass = async (req, res) => {
     try {
-        const { 
-            name, user, colid, year, program, programcode, course, 
-            coursecode, semester, section, classdate, classtime, 
-            topic, module, link, classtype, status1, comments 
+        const {
+            name, user, colid, year, program, programcode, course,
+            coursecode, semester, section, classdate, classtime,
+            topic, module, link, classtype, status1, comments
         } = req.body;
 
         const newClass = await classnew.create({
@@ -41,9 +44,9 @@ exports.getclassesbyuser = async (req, res) => {
     try {
         const { user, colid } = req.query;
 
-        const classes = await classnew.find({ 
-            user, 
-            colid: parseInt(colid) 
+        const classes = await classnew.find({
+            user,
+            colid: parseInt(colid)
         }).sort({ classdate: -1, classtime: -1 });
 
         res.json({
@@ -78,12 +81,12 @@ exports.searchusers = async (req, res) => {
 
         const searchRegex = new RegExp(query, 'i');
 
-        const users = await User.find({ 
+        const users = await User.find({
             colid: parseInt(colid),
             $or: [
                 { name: { $regex: searchRegex } },
                 { regno: { $regex: searchRegex } },
-                {email: {$regex: searchRegex}}
+                { email: { $regex: searchRegex } }
             ],
             status: 1
         }).limit(20);
@@ -109,11 +112,29 @@ exports.searchusers = async (req, res) => {
 // Enroll Student to Class
 exports.enrollstudent = async (req, res) => {
     try {
-        const { 
-            name, user, colid, year, program, programcode, course, 
-            coursecode, student, regno, learning, gender, classgroup, 
-            coursetype, semester, active, status1, comments 
+        const {
+            name, user, colid, year, program, programcode, course,
+            coursecode, student, regno, learning, gender, classgroup,
+            coursetype, semester, active, status1, comments
         } = req.body;
+
+        const existingEnrollment = await classenr1.findOne({
+            colid: parseInt(colid),
+            regno,
+            student,
+            coursecode,
+            course,
+            user
+        });
+
+        if (existingEnrollment) {
+            return res.json({
+                success: false,
+                alreadyEnrolled: true,
+                message: 'You are already enrolled in this course',
+                enrollment: existingEnrollment
+            });
+        }
 
         const enrollment = await classenr1.create({
             name, user, colid, year, program, programcode, course,
@@ -138,12 +159,11 @@ exports.enrollstudent = async (req, res) => {
 // Get Enrolled Students for Class
 exports.getenrolledstudents = async (req, res) => {
     try {
-        const { coursecode, colid, semester } = req.query;
+        const { coursecode, colid } = req.query;
 
         const enrollments = await classenr1.find({
             coursecode,
             colid: parseInt(colid),
-            semester,
         }).sort({ student: 1 });
 
         return res.json({
@@ -703,47 +723,154 @@ exports.getsinglestudentrport = async (req, res) => {
 
 
 exports.getenrollments = async (req, res) => {
-  try {
-    const { colid, coursecode, year, user, status } = req.query;
-    if (!colid || !coursecode || !year) {
-      return res.status(400).json({ success: false, message: 'colid, coursecode, year are required' });
+    try {
+        const { colid, coursecode, year, user, status } = req.query;
+        if (!colid || !coursecode || !year) {
+            return res.status(400).json({ success: false, message: 'colid, coursecode, year are required' });
+        }
+
+        const match = {
+            colid: Number(colid),
+            coursecode,
+            year
+        };
+        if (user) match.user = user;
+
+        if (status === 'active') match.active = 'Yes';
+        if (status === 'pending') match.active = { $ne: 'Yes' };
+
+        const list = await classenr1.find(match).sort({ _id: -1 }).lean();
+        return res.json({ success: true, data: list });
+    } catch (e) {
+        return res.status(500).json({ success: false, message: 'Failed to fetch enrollments', error: e.message });
     }
-
-    const match = {
-      colid: Number(colid),
-      coursecode,
-      year
-    };
-    if (user) match.user = user;
-
-    if (status === 'active') match.active = 'Yes';
-    if (status === 'pending') match.active = { $ne: 'Yes' };
-
-    const list = await classenr1.find(match).sort({ _id: -1 }).lean();
-    return res.json({ success: true, data: list });
-  } catch (e) {
-    return res.status(500).json({ success: false, message: 'Failed to fetch enrollments', error: e.message });
-  }
 };
 
 // PUT /api/v2/update-enrollment-status/:id
 // Body: { active: 'yes' | 'no', status1?: 'Active' | 'Pending' | 'Rejected' | string }
 exports.updateenrollmentstatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { active, status1 } = req.body;
+
+        const update = {};
+        if (typeof active !== 'undefined') update.active = active;
+        if (typeof status1 !== 'undefined') update.status1 = status1;
+
+        if (Object.keys(update).length === 0) {
+            return res.status(400).json({ success: false, message: 'No fields to update' });
+        }
+
+        await classenr1.findByIdAndUpdate(id, update);
+        return res.json({ success: true, message: 'Enrollment updated' });
+    } catch (e) {
+        return res.status(500).json({ success: false, message: 'Failed to update enrollment', error: e.message });
+    }
+};
+
+// ✅ NEW: Update Class Controller
+exports.updateclass = async (req, res) => {
   try {
     const { id } = req.params;
-    const { active, status1 } = req.body;
+    const { user, colid, ...updateData } = req.body;
 
-    const update = {};
-    if (typeof active !== 'undefined') update.active = active;
-    if (typeof status1 !== 'undefined') update.status1 = status1;
-
-    if (Object.keys(update).length === 0) {
-      return res.status(400).json({ success: false, message: 'No fields to update' });
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid class ID format'
+      });
     }
 
-    await classenr1.findByIdAndUpdate(id, update);
-    return res.json({ success: true, message: 'Enrollment updated' });
-  } catch (e) {
-    return res.status(500).json({ success: false, message: 'Failed to update enrollment', error: e.message });
+    // Update class with authorization check
+    const updatedClass = await classnew.findOneAndUpdate(
+      { 
+        _id: id, 
+        user: user, 
+        colid: parseInt(colid) 
+      },
+      { 
+        ...updateData,
+        updatedat: new Date() 
+      },
+      { 
+        new: true,  // Return updated document
+        runValidators: true  // Run schema validations
+      }
+    );
+
+    if (!updatedClass) {
+      return res.status(404).json({
+        success: false,
+        message: 'Class not found or access denied'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Class updated successfully',
+      data: updatedClass
+    });
+
+  } catch (error) {
+    console.error('Update class error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update class',
+      error: error.message
+    });
+  }
+};
+
+// ✅ NEW: Delete Class Controller
+exports.deleteclass = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { user, colid } = req.query;
+
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid class ID format'
+      });
+    }
+
+    // Delete class with authorization check
+    const deletedClass = await classnew.findOneAndDelete({
+      _id: id,
+      user: user,
+      colid: parseInt(colid)
+    });
+
+    if (!deletedClass) {
+      return res.status(404).json({
+        success: false,
+        message: 'Class not found or access denied'
+      });
+    }
+
+    // Optional: Also delete related attendance records
+    // await attendanceds.deleteMany({ classid: id });
+
+    res.json({
+      success: true,
+      message: 'Class deleted successfully',
+      data: {
+        deletedClass: {
+          id: deletedClass._id,
+          topic: deletedClass.topic,
+          course: deletedClass.course
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Delete class error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete class',
+      error: error.message
+    });
   }
 };
