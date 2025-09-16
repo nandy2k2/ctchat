@@ -445,13 +445,16 @@ exports.createapikeyds1 = async (req, res) => {
   try {
     const { name, user, colid, facultyid, defaultapikey, personalapikey,
       usepersonalkey, apikeyname, personalapikeyname, monthlylimit,
-      currentusage, isactive } = req.body;
+      currentusage, isactive, youtubeapikey, youtubequotaused, youtubequotalimit } = req.body;
 
     const filter = { facultyid, colid, user };
     const update = {
       name, user, colid, facultyid, defaultapikey, personalapikey,
       usepersonalkey, apikeyname, personalapikeyname, monthlylimit,
-      currentusage, isactive, updatedat: new Date()
+      currentusage, isactive, 
+      youtubeapikey: youtubeapikey || '',
+      youtubequotaused: youtubequotaused || 0,
+      youtubequotalimit: youtubequotalimit || 10000, updatedat: new Date()
     };
 
     const apikey = await gptapikeyds.findOneAndUpdate(filter, update, {
@@ -530,7 +533,10 @@ exports.getactiveapikeyds1 = async (req, res) => {
         keyname: keyName,
         usepersonalkey: apikey.usepersonalkey,
         monthlylimit: apikey.monthlylimit,
-        currentusage: apikey.currentusage
+        currentusage: apikey.currentusage,
+        youtubeapikey: apikey.youtubeapikey || '',
+        youtubequotaused: apikey.youtubequotaused || 0,
+        youtubequotalimit: apikey.youtubequotalimit || 10000
       }
     });
   } catch (error) {

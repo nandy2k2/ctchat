@@ -62,23 +62,7 @@ const apikeydsschema = new mongoose.Schema({
     updatedat: {
         type: Date,
         default: Date.now
-    },
-    youtubeapikey: {
-    type: String,
-    default: ''
-  },
-  youtubequotaused: {
-    type: Number,
-    default: 0
-  },
-  youtubequotalimit: {
-    type: Number,
-    default: 10000 // Daily quota limit
-  },
-  youtubelastusage: {
-    type: Date,
-    default: Date.now
-  }
+    }
 });
 
 // Index for querying by colid

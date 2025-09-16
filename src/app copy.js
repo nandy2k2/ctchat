@@ -19,7 +19,6 @@ const testdsctlr1 = require("./controllers/testdsctlr1.js");
 const testsubmissiondsctlr1 = require("./controllers/testsubmissiondsctlr1.js");
 const authctlr = require("./controllers/authctlr.js");
 const enrollmentlinkdsctlr = require("./controllers/enrollmentlinkdsctlr.js");
-const aivideoanalysisctlr = require('./controllers/aivideoanalysisctlr.js');
 
 dotenv.config();
 
@@ -228,13 +227,6 @@ app.put("/api/v2/enrollment-link/:token/revoke", enrollmentlinkdsctlr.revokeenro
 app.get("/api/v2/getenrollments", attendancectlr.getenrollments);
 app.put("/api/v2/update-enrollment-status/:id", attendancectlr.updateenrollmentstatus);
 
-// AI Video Analysis Routes
-app.get("/api/v2/monitorscheduledclasses", aivideoanalysisctlr.monitorscheduledclasses);
-app.post("/api/v2/processaivideoanalysis", aivideoanalysisctlr.processaivideoanalysis);
-app.get("/api/v2/getaivideoanalysisbyuser", aivideoanalysisctlr.getaivideoanalysisbyuser);
-app.get("/api/v2/getaichatmessages/:chatRoomId", aivideoanalysisctlr.getaichatmessages);
-app.delete("/api/v2/deleteaivideoanalysis/:id", aivideoanalysisctlr.deleteaivideoanalysis);
-
 
 // ======================
 // SOCKET.IO HANDLERS
@@ -294,66 +286,10 @@ io.on('connection', (socket) => {
     });
   });
 
-
-  // ✅ ENHANCED: AI Chat handlers with better debugging
-  socket.on('join_ai_chat', (data) => {
-    const { chatRoomId, userRole, user, colid } = data;
-    
-    // if (!chatRoomId) {
-    //   console.error('❌ No chatRoomId provided for AI chat join');
-    //   return;
-    // }
-    
-    if (userRole === 'Faculty') {
-      socket.join(chatRoomId);
-    } else if (userRole === 'Student') {
-      socket.join(`${chatRoomId}_view`);
-    }
-  });
-
-  socket.on('send_ai_message', (messageData) => {
-    const { chatRoomId, senderRole } = messageData;
-    
-    if (senderRole === 'Faculty' || senderRole === 'ai') {
-      // Broadcast to both faculty and student rooms
-      io.to(chatRoomId).emit('receive_ai_message', messageData);
-      io.to(`${chatRoomId}_view`).emit('receive_ai_message', messageData);
-      
-    }
-  });
-
-  // ✅ NEW: Room connection test handler
-  socket.on('test_room_connection', (data) => {
-    const { room, userRole } = data;
-    
-    const targetRoom = userRole === 'Student' ? `${room}_view` : room;
-    const roomClients = io.sockets.adapter.rooms.get(targetRoom);
-    
-    const response = {
-      room: targetRoom,
-      userCount: roomClients ? roomClients.size : 0,
-      success: roomClients ? roomClients.has(socket.id) : false,
-      allRooms: Array.from(socket.rooms)
-    };
-    socket.emit('room_test_response', response);
-  });
-
-  socket.on('leave_ai_chat', (data) => {
-    const { chatRoomId, userRole, userName } = data;
-    
-    if (userRole === 'Student') {
-      socket.leave(`${chatRoomId}_view`);
-    } else {
-      socket.leave(chatRoomId);
-    }
-  });
-
   socket.on('disconnect', () => {
     // Connection closed
   });
 });
-
-app.set('io', io);
 
 async function startServer() {
   await connectDB();
