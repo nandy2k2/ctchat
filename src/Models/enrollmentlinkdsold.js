@@ -9,7 +9,6 @@ const enrollmentlinkdsSchema = new mongoose.Schema(
     course: { type: String, required: true },                      // course title
     coursecode: { type: String, required: true, index: true },     // e.g., cs101
     year: { type: String, required: true },                        // academic session/year
-    coursetype: {type: String},
     program: { type: String, default: '' },
     programcode: { type: String, default: '' },
 

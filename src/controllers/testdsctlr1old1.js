@@ -14,7 +14,7 @@ exports.createtestds1 = async (req, res) => {
       topic, scheduleddate, starttime, endtime, duration, totalnoofquestion,
       questions, sections, sectionBased, shufflequestions, showresultsimmediately, 
       allowretake, passingscore, timelimit, proctoringmode, calculatorallowed,
-      formulasheetallowed, instructions, rules, status, ispublished, year
+      formulasheetallowed, instructions, rules, status, ispublished
     } = req.body;
 
     const filter = { testtitle, colid, user };
@@ -24,7 +24,7 @@ exports.createtestds1 = async (req, res) => {
       questions, sections: sections || [], sectionBased: sectionBased || false,
       shufflequestions, showresultsimmediately, allowretake, passingscore, 
       timelimit, proctoringmode, calculatorallowed, formulasheetallowed, 
-      instructions, rules, status, ispublished, updatedat: new Date(), year
+      instructions, rules, status, ispublished, updatedat: new Date()
     };
 
     const testdsnew = await testds1.findOneAndUpdate(filter, update, {
@@ -72,7 +72,7 @@ exports.gettestsbyuser1 = async (req, res) => {
 // Get Available Tests for Students (Using aggregation)
 exports.getavailabletestsds1 = async (req, res) => {
   try {
-    const { colid, classid, year, user } = req.query;
+    const { colid, classid } = req.query;
     const currentTime = new Date();
 
     const pipeline = [
@@ -83,9 +83,7 @@ exports.getavailabletestsds1 = async (req, res) => {
           ispublished: true,
           starttime: { $lte: currentTime },
           endtime: { $gte: currentTime },
-          status: { $in: ['scheduled', 'active'] },
-          user,
-          year
+          status: { $in: ['scheduled', 'active'] }
         }
       },
       { $sort: { starttime: 1 } },

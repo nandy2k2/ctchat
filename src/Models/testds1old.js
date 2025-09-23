@@ -104,8 +104,7 @@ const testschema = new mongoose.Schema({
   maxscore: { type: Number, default: 0 },
   minscore: { type: Number, default: 0 },
   createdat: { type: Date, default: Date.now },
-  updatedat: { type: Date, default: Date.now },
-  year: {type: String}
+  updatedat: { type: Date, default: Date.now }
 });
 
 const testds1 = mongoose.model('testds1', testschema);

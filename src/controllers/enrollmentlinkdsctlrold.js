@@ -11,7 +11,7 @@ function gentoken() {
 // body: { colid, user, name, course, coursecode, year, program?, programcode?, ttlMinutes? }
 exports.createenrollmentlink = async (req, res) => {
   try {
-    const { colid, user, name, course, coursecode, year, program, programcode, ttlMinutes, coursetype } = req.body;
+    const { colid, user, name, course, coursecode, year, program, programcode, ttlMinutes } = req.body;
     if (!colid || !user || !name || !course || !coursecode || !year) {
       return res.status(400).json({ success: false, message: 'colid, user, name, course, coursecode, year are required' });
     }
@@ -25,8 +25,7 @@ exports.createenrollmentlink = async (req, res) => {
       coursecode,
       year,
       program: program || '',
-      programcode: programcode || '',
-      coursetype
+      programcode: programcode || ''
     };
     if (ttlMinutes && Number(ttlMinutes) > 0) {
       const d = new Date();
@@ -36,7 +35,7 @@ exports.createenrollmentlink = async (req, res) => {
     const created = await enrollmentlinkds.create(doc);
     return res.status(201).json({ success: true, message: 'link created', data: { token: created.token, expiresAt: created.expiresat || null } });
   } catch (e) {
-    // return res.status(500).json({ success: false, message: 'failed to create link', error: e.message });
+    return res.status(500).json({ success: false, message: 'failed to create link', error: e.message });
   }
 };
 
@@ -53,7 +52,7 @@ exports.getenrollmentlinksbycreator = async (req, res) => {
       .lean();
     return res.json({ success: true, data: list });
   } catch (e) {
-    // return res.status(500).json({ success: false, message: 'failed to fetch links', error: e.message });
+    return res.status(500).json({ success: false, message: 'failed to fetch links', error: e.message });
   }
 };
 
@@ -72,12 +71,11 @@ exports.resolveenrollmenttoken = async (req, res) => {
       program: link.program || '',
       programcode: link.programcode || '',
       creatorUser: link.user,
-      creatorName: link.name,
-      coursetype: link.coursetype
+      creatorName: link.name
     };
     return res.json({ success: true, data: meta });
   } catch (e) {
-    // return res.status(500).json({ success: false, message: 'failed to resolve link', error: e.message });
+    return res.status(500).json({ success: false, message: 'failed to resolve link', error: e.message });
   }
 };
 
@@ -88,6 +86,6 @@ exports.revokeenrollmentlink = async (req, res) => {
     await enrollmentlinkds.updateOne({ token }, { $set: { status: 'revoked' } });
     return res.json({ success: true, message: 'link revoked' });
   } catch (e) {
-    // return res.status(500).json({ success: false, message: 'failed to revoke link', error: e.message });
+    return res.status(500).json({ success: false, message: 'failed to revoke link', error: e.message });
   }
 };

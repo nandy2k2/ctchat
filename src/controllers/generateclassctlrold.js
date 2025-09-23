@@ -149,7 +149,7 @@ exports.saveClassesAndAssessments = async (req, res) => {
           name: name,
           user,
           colid: parseInt(colid),
-          classid: coursecode,
+          classid: new mongoose.Types.ObjectId(),
           course,
           coursecode,
           testtitle: `${course} - AI Assessment (${new Date(testDate).toLocaleDateString()})`,
