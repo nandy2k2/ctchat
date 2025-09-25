@@ -24,6 +24,7 @@ const generateclassctlr = require('./controllers/generateclassctlr');
 const schedule = require('node-schedule');
 const classnew = require('./Models/classnew.js');
 const classenr1 = require('./Models/classenr1.js');
+const bookctlr = require("./controllers/bookctlr.js");
 
 dotenv.config();
 
@@ -367,6 +368,12 @@ app.get("/api/v2/getTopicsCoveredUpToDate", generateclassctlr.getTopicsCoveredUp
 app.post("/api/v2/confirmclassschedule", generateclassctlr.confirmclassschedule);
 app.put("/api/v2/updateclass/:id", attendancectlr.updateclass);
 app.delete("/api/v2/deleteclass/:id", attendancectlr.deleteclass);
+
+// book management
+app.post("/api/v2/createbook", bookctlr.createbook);
+app.get("/api/v2/getbooksbyuser", bookctlr.getbooksbyuser);
+app.post("/api/v2/updatebook", bookctlr.updatebook);
+app.get("/api/v2/deletebook", bookctlr.deletebook);
 
 
 
