@@ -1,7 +1,7 @@
-const aivideoanalysisds = require('../Models/aivideoanalysisds');
-const classnew = require('../Models/classnew');
-const classenr1 = require('../Models/classenr1');
-const massignments = require('../Models/massignments');
+const aivideoanalysisds = require('../Models/aivideoanalysisdsremedial');
+const classnew = require('../Models/classnewremedial');
+const classenr1 = require('../Models/classenr1remedial');
+const massignments = require('../Models/massignmentsremedial');
 const messageds = require('../Models/messageds');
 const gptapikeyds = require('../Models/gptapikeyds');
 const YouTubeService = require('../services/youtubeService');
@@ -13,7 +13,7 @@ const generateAIChatRoom = (coursecode) => {
     throw new Error('Invalid coursecode provided');
   }
   const safeCourseCode = coursecode.toLowerCase().replace(/[^a-z0-9]/g, '');
-  return `ai-chat-${safeCourseCode}`;
+  return `ai-chat-remedial-${safeCourseCode}`;
 };
 
 // ✅ FIXED: Generate detailed assignment prompts
@@ -77,7 +77,7 @@ Return as JSON:
 };
 
 // ✅ FIXED: Monitor scheduled classes - ONLY TODAY'S CLASSES
-exports.monitorscheduledclasses = async (req, res) => {
+exports.monitorscheduledclassesremedial = async (req, res) => {
   try {
     const { colid, user } = req.query;
     if (!colid || !user) {
@@ -135,7 +135,7 @@ exports.monitorscheduledclasses = async (req, res) => {
 };
 
 // ✅ FIXED: Complete processaivideoanalysis function
-exports.processaivideoanalysis = async (req, res) => {
+exports.processaivideoanalysisremedial = async (req, res) => {
   try {
     const { classid, user, colid } = req.body;
     if (!classid || !user || !colid) {
@@ -639,7 +639,7 @@ async function sendAIChatMessageWithStatus(analysis, videoAnalysis, selectedVide
     }
 
   } catch (error) {
-    console.error('Error sending AI chat message:', error);
+    // console.error('Error sending AI chat message:', error);
   }
 }
 
@@ -676,7 +676,7 @@ async function sendErrorMessage(analysis, errorMessage, io) {
 }
 
 // Get AI video analyses by user
-exports.getaivideoanalysisbyuser = async (req, res) => {
+exports.getaivideoanalysisbyuserremedial = async (req, res) => {
   try {
     const { colid, user } = req.query;
     if (!colid || !user) {
@@ -708,7 +708,7 @@ exports.getaivideoanalysisbyuser = async (req, res) => {
 };
 
 // Get AI chat messages for a specific room
-exports.getaichatmessages = async (req, res) => {
+exports.getaichatmessagesremedial = async (req, res) => {
   try {
     const { chatRoomId } = req.params;
     const { colid, coursecode } = req.query;
@@ -749,7 +749,7 @@ exports.getaichatmessages = async (req, res) => {
 };
 
 // Delete AI analysis
-exports.deleteaivideoanalysis = async (req, res) => {
+exports.deleteaivideoanalysisremedial = async (req, res) => {
   try {
     const { id } = req.params;
     const { colid, user } = req.query;

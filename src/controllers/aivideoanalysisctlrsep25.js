@@ -671,7 +671,7 @@ async function sendErrorMessage(analysis, errorMessage, io) {
       io.to(`${analysis.chatRoomId}_view`).emit('ai_error', { error: errorMessage });
     }
   } catch (error) {
-    // console.error('Error sending error message:', error);
+    console.error('Error sending error message:', error);
   }
 }
 
@@ -699,11 +699,11 @@ exports.getaivideoanalysisbyuser = async (req, res) => {
     });
 
   } catch (error) {
-    // res.status(500).json({
-    //   success: false,
-    //   message: 'Failed to retrieve AI video analyses',
-    //   error: error.message
-    // });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve AI video analyses',
+      error: error.message
+    });
   }
 };
 
@@ -740,11 +740,11 @@ exports.getaichatmessages = async (req, res) => {
     });
 
   } catch (error) {
-    // res.status(500).json({
-    //   success: false,
-    //   message: 'Failed to retrieve AI chat messages',
-    //   error: error.message
-    // });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve AI chat messages',
+      error: error.message
+    });
   }
 };
 
@@ -773,10 +773,10 @@ exports.deleteaivideoanalysis = async (req, res) => {
     });
 
   } catch (error) {
-    // res.status(500).json({
-    //   success: false,
-    //   message: 'Failed to delete AI analysis',
-    //   error: error.message
-    // });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete AI analysis',
+      error: error.message
+    });
   }
 };

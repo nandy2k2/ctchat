@@ -25,6 +25,16 @@ const schedule = require('node-schedule');
 const classnew = require('./Models/classnew.js');
 const classenr1 = require('./Models/classenr1.js');
 const bookctlr = require("./controllers/bookctlr.js");
+const attendanceadvancectlr = require("./controllers/attendanceadvancectlr.js");
+const attendanceremedialctlr = require("./controllers/attendanceremedialctlr.js");
+const coursedsadvancectlr = require("./controllers/coursedsadvancectlr.js");
+const coursedsremedialctlr = require("./controllers/coursedsremedialctlr.js");
+const aivideoanalysisremedialctlr = require("./controllers/aivideoanalysisremedialctlr.js");
+const aivideoanalysisadvancectlr = require("./controllers/aivideoanalysisadvancectlr.js");
+const enrollmentlinkdsadvancectlr = require("./controllers/enrollmentlinkdsadvancectlr.js");
+const enrollmentlinkdsremedialctlr = require("./controllers/enrollmentlinkdsremedialctlr");
+const generatedclassadvancectlr = require("./controllers/generateclassadvancectlr");
+const generatedclassremedialctlr = require("./controllers/generateclassremedialctlr");
 
 dotenv.config();
 
@@ -374,6 +384,152 @@ app.post("/api/v2/createbook", bookctlr.createbook);
 app.get("/api/v2/getbooksbyuser", bookctlr.getbooksbyuser);
 app.post("/api/v2/updatebook", bookctlr.updatebook);
 app.get("/api/v2/deletebook", bookctlr.deletebook);
+
+
+
+// Attendance Advance Management Routes
+app.post("/api/v2/createclassadvance", attendanceadvancectlr.createclassadvance);
+app.get("/api/v2/getclassesbyuseradvance", attendanceadvancectlr.getclassesbyuseradvance);
+app.get("/api/v2/searchusersadvance", attendanceadvancectlr.searchusersadvance);
+app.post("/api/v2/enrollstudentadvance", attendanceadvancectlr.enrollstudentadvance);
+app.get("/api/v2/getenrolledstudentsadvance", attendanceadvancectlr.getenrolledstudentsadvance);
+app.post("/api/v2/markattendanceadvance", attendanceadvancectlr.markattendanceadvance);
+
+// Advanced Report routes with aggregation
+app.get("/api/v2/getclassreportaggregateadvance", attendanceadvancectlr.getclassreportaggregateadvance);
+app.get("/api/v2/getstudentreportaggregateadvance", attendanceadvancectlr.getstudentreportaggregateadvance);
+app.get("/api/v2/getattendancesummarybydateadvance", attendanceadvancectlr.getattendancesummarybydateadvance);
+app.get('/api/v2/getsinglestudentreportadvance', attendanceadvancectlr.getsinglestudentrportadvance);
+app.get("/api/v2/getclassreportbycourseadvance", attendanceadvancectlr.getclassreportbycourseadvance);
+app.get("/api/v2/getfacultycoursesadvance", attendanceadvancectlr.getfacultycoursesadvance);
+
+// Enrollment listing + status change
+app.get("/api/v2/getenrollmentsadvance", attendanceadvancectlr.getenrollmentsadvance);
+app.put("/api/v2/update-enrollment-statusadvance/:id", attendanceadvancectlr.updateenrollmentstatusadvance);
+app.put("/api/v2/updateclassadvance/:id", attendanceadvancectlr.updateclassadvance);
+app.delete("/api/v2/deleteclassadvance/:id", attendanceadvancectlr.deleteclassadvance);
+
+// Attendance Management Routes
+app.post("/api/v2/createclassremedial", attendanceremedialctlr.createclassremedial);
+app.get("/api/v2/getclassesbyuserremedial", attendanceremedialctlr.getclassesbyuserremedial);
+app.get("/api/v2/searchusersremedial", attendanceremedialctlr.searchusersremedial);
+app.post("/api/v2/enrollstudentremedial", attendanceremedialctlr.enrollstudentremedial);
+app.get("/api/v2/getenrolledstudentsremedial", attendanceremedialctlr.getenrolledstudentsremedial);
+app.post("/api/v2/markattendanceremedial", attendanceremedialctlr.markattendanceremedial);
+
+// Advanced Report routes with aggregation
+app.get("/api/v2/getclassreportaggregateremedial", attendanceremedialctlr.getclassreportaggregateremedial);
+app.get("/api/v2/getstudentreportaggregateremedial", attendanceremedialctlr.getstudentreportaggregateremedial);
+app.get("/api/v2/getattendancesummarybydateremedial", attendanceremedialctlr.getattendancesummarybydateremedial);
+app.get('/api/v2/getsinglestudentreportremedial', attendanceremedialctlr.getsinglestudentrportremedial);
+app.put("/api/v2/updateclassremedial/:id", attendanceremedialctlr.updateclassremedial);
+app.delete("/api/v2/deleteclassremedial/:id", attendanceremedialctlr.deleteclassremedial);
+app.get("/api/v2/getclassreportbycourseremedial", attendanceremedialctlr.getclassreportbycourseremedial);
+app.get("/api/v2/", attendanceremedialctlr.getfacultycoursesremedial)
+
+// Enrollment listing + status change
+app.get("/api/v2/getenrollmentsremedial", attendanceremedialctlr.getenrollmentsremedial);
+app.put("/api/v2/update-enrollment-statusremedial/:id", attendanceremedialctlr.updateenrollmentstatusremedial);
+
+// Course Management
+app.post("/api/v2/createcourseadvance", coursedsadvancectlr.createcourseadvance);
+app.get("/api/v2/getcoursebyfacultyadvance", coursedsadvancectlr.getcoursebyfacultyadvance);
+app.get("/api/v2/getcoursesbystudentadvance", coursedsadvancectlr.getcoursesbystudentadvance);
+
+// Assignment Management
+app.post("/api/v2/createassignmentadvance", coursedsadvancectlr.createassignmentadvance);
+app.get("/api/v2/getassignmentsbycourseadvance", coursedsadvancectlr.getassignmentsbycourseadvance);
+app.get("/api/v2/getassignmentsfirstudentadvance", coursedsadvancectlr.getassignmentsfirstudentadvance);
+app.post("/api/v2/submitassignmentadvance", coursedsadvancectlr.submitassignmentadvance);
+app.get("/api/v2/getassignmentsubmissionsadvance/:assignmentid", coursedsadvancectlr.getassignmentsubmissionsadvance);
+
+// Syllabus Management
+app.post("/api/v2/createsyllabusadvance", coursedsadvancectlr.createsyllabusadvance);
+app.get("/api/v2/getsyllabusbycourseadvance", coursedsadvancectlr.getsyllabusbycourseadvance);
+app.put("/api/v2/marksyllabuscompleteadvance/:id", coursedsadvancectlr.marksyllabuscompleteadvance);
+
+// Course Material Management
+app.post("/api/v2/createcoursematerialadvance", coursedsadvancectlr.createcoursematerialadvance);
+app.get("/api/v2/getcoursematerialsbycourseadvance", coursedsadvancectlr.getcoursematerialsbycourseadvance);
+
+// checking route for student enrollment
+app.get('/api/v2/checkexistingenrollmentadvance', coursedsadvancectlr.checkexistingenrollmentadvance);
+
+
+// Message Management
+app.post("/api/v2/savemessageadvance", coursedsadvancectlr.savemessageadvance);
+app.get("/api/v2/getmessagesbyroomadvance/:room", coursedsadvancectlr.getmessagesbyroomadvance);
+
+app.get("/api/v2/getawsconfigbycolidadvance", coursedsadvancectlr.getawsconfigbycolidadvance);
+
+// Course Management
+app.post("/api/v2/createcourseremedial", coursedsremedialctlr.createcourseremedial);
+app.get("/api/v2/getcoursebyfacultyremedial", coursedsremedialctlr.getcoursebyfacultyremedial);
+app.get("/api/v2/getcoursesbystudentremedial", coursedsremedialctlr.getcoursesbystudentremedial);
+
+// Assignment Management
+app.post("/api/v2/createassignmentremedial", coursedsremedialctlr.createassignmentremedial);
+app.get("/api/v2/getassignmentsbycourseremedial", coursedsremedialctlr.getassignmentsbycourseremedial);
+app.get("/api/v2/getassignmentsfirstudentremedial", coursedsremedialctlr.getassignmentsfirstudentremedial);
+app.post("/api/v2/submitassignmentremedial", coursedsremedialctlr.submitassignmentremedial);
+app.get("/api/v2/getassignmentsubmissionsremedial/:assignmentid", coursedsremedialctlr.getassignmentsubmissionsremedial);
+
+// Syllabus Management
+app.post("/api/v2/createsyllabusremedial", coursedsremedialctlr.createsyllabusremedial);
+app.get("/api/v2/getsyllabusbycourseremedial", coursedsremedialctlr.getsyllabusbycourseremedial);
+app.put("/api/v2/marksyllabuscompleteremedial/:id", coursedsremedialctlr.marksyllabuscompleteremedial);
+
+// Course Material Management
+app.post("/api/v2/createcoursematerialremedial", coursedsremedialctlr.createcoursematerialremedial);
+app.get("/api/v2/getcoursematerialsbycourseremedial", coursedsremedialctlr.getcoursematerialsbycourseremedial);
+
+// checking route for student enrollment
+app.get('/api/v2/checkexistingenrollmentremedial', coursedsremedialctlr.checkexistingenrollmentremedial);
+
+
+// Message Management
+app.post("/api/v2/savemessageremedial", coursedsremedialctlr.savemessageremedial);
+app.get("/api/v2/getmessagesbyroomremedial/:room", coursedsremedialctlr.getmessagesbyroomremedial);
+
+app.get("/api/v2/getawsconfigbycolidremedial", coursedsremedialctlr.getawsconfigbycolidremedial);
+
+// AI Video Analysis Routes
+app.get("/api/v2/monitorscheduledclassesremedial", aivideoanalysisremedialctlr.monitorscheduledclassesremedial);
+app.post("/api/v2/processaivideoanalysisremedial", aivideoanalysisremedialctlr.processaivideoanalysisremedial);
+app.get("/api/v2/getaivideoanalysisbyuserremedial", aivideoanalysisremedialctlr.getaivideoanalysisbyuserremedial);
+app.get("/api/v2/getaichatmessagesremedial/:chatRoomId", aivideoanalysisremedialctlr.getaichatmessagesremedial);
+app.delete("/api/v2/deleteaivideoanalysisremedial/:id", aivideoanalysisremedialctlr.deleteaivideoanalysisremedial);
+
+// AI Video Analysis Routes
+app.get("/api/v2/monitorscheduledclassesadvance", aivideoanalysisadvancectlr.monitorscheduledclassesadvance);
+app.post("/api/v2/processaivideoanalysisadvance", aivideoanalysisadvancectlr.processaivideoanalysisadvance);
+app.get("/api/v2/getaivideoanalysisbyuseradvance", aivideoanalysisadvancectlr.getaivideoanalysisbyuseradvance);
+app.get("/api/v2/getaichatmessagesadvance/:chatRoomId", aivideoanalysisadvancectlr.getaichatmessagesadvance);
+app.delete("/api/v2/deleteaivideoanalysisadvance/:id", aivideoanalysisadvancectlr.deleteaivideoanalysisadvance);
+
+// Enrollment link APIs
+app.post("/api/v2/create-enrollment-linkadvance", enrollmentlinkdsadvancectlr.createenrollmentlinkadvance);
+app.get("/api/v2/enrollment-linksadvance", enrollmentlinkdsadvancectlr.getenrollmentlinksbycreatoradvance);
+app.get("/api/v2/enrollment-linkadvance/:token", enrollmentlinkdsadvancectlr.resolveenrollmenttokenadvance);
+app.put("/api/v2/enrollment-linkadvance/:token/revoke", enrollmentlinkdsadvancectlr.revokeenrollmentlinkadvance);
+
+// Enrollment link APIs
+app.post("/api/v2/create-enrollment-linkremedial", enrollmentlinkdsremedialctlr.createenrollmentlinkremedial);
+app.get("/api/v2/enrollment-linksremedial", enrollmentlinkdsremedialctlr.getenrollmentlinksbycreatorremedial);
+app.get("/api/v2/enrollment-linkremedial/:token", enrollmentlinkdsremedialctlr.resolveenrollmenttokenremedial);
+app.put("/api/v2/enrollment-linkremedial/:token/revoke", enrollmentlinkdsremedialctlr.revokeenrollmentlinkremedial);
+
+// Ai generated classes and assesment
+app.post("/api/v2/generateclassscheduleadvance", generatedclassadvancectlr.generateclassscheduleadvance);
+app.post("/api/v2/saveClassesAndAssessmentsadvance", generatedclassadvancectlr.saveClassesAndAssessmentsadvance);
+app.get("/api/v2/getTopicsCoveredUpToDateadvance", generatedclassadvancectlr.getTopicsCoveredUpToDateadvance);
+app.post("/api/v2/confirmclassscheduleadvance", generatedclassadvancectlr.confirmclassscheduleadvance);
+
+// Ai generated classes and assesment
+app.post("/api/v2/generateclassscheduleremedial", generatedclassremedialctlr.generateclassscheduleremedial);
+app.post("/api/v2/saveClassesAndAssessmentsremedial", generatedclassremedialctlr.saveClassesAndAssessmentsremedial);
+app.get("/api/v2/getTopicsCoveredUpToDateremedial", generatedclassremedialctlr.getTopicsCoveredUpToDateremedial);
+app.post("/api/v2/confirmclassscheduleremedial", generatedclassremedialctlr.confirmclassscheduleremedial);
 
 
 

@@ -10,7 +10,7 @@ async function callAI(prompt, retries = 2) {
 
   const { GoogleGenerativeAI } = require('@google/generative-ai');
   const genAI = new GoogleGenerativeAI(apiKeyData.personalapikey || apiKeyData.defaultapikey);
-  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
   for (let i = 0; i <= retries; i++) {
     try {
@@ -201,12 +201,12 @@ exports.saveClassesAndAssessments = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Save error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to save classes and assessments',
-      error: error.message
-    });
+    // console.error('Save error:', error);
+    // res.status(500).json({
+    //   success: false,
+    //   message: 'Failed to save classes and assessments',
+    //   error: error.message
+    // });
   }
 };
 
@@ -259,12 +259,12 @@ exports.getTopicsCoveredUpToDate = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Topics aggregation error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to get topics',
-      error: error.message
-    });
+    // console.error('Topics aggregation error:', error);
+    // res.status(500).json({
+    //   success: false,
+    //   message: 'Failed to get topics',
+    //   error: error.message
+    // });
   }
 };
 
@@ -287,10 +287,10 @@ exports.confirmclassschedule = async (req, res) => {
     });
 
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to confirm schedule',
-      error: error.message
-    });
+    // res.status(500).json({
+    //   success: false,
+    //   message: 'Failed to confirm schedule',
+    //   error: error.message
+    // });
   }
 };

@@ -1,4 +1,4 @@
-const classnew = require('../Models/classnew');
+const classnew = require('../Models/classnewremedial');
 const testds1 = require('../Models/testds1');
 const gptapikeyds = require('../Models/gptapikeyds');
 const mongoose = require('mongoose');
@@ -71,7 +71,7 @@ Return only JSON array:
 }
 
 // ✅ MAIN: Generate class schedule (simplified)
-exports.generateclassschedule = async (req, res) => {
+exports.generateclassscheduleremedial = async (req, res) => {
   try {
     const { course, coursecode, startDate, totalHours, selectedDays, user, colid, name, program, programcode, semester, section } = req.body;
 
@@ -126,7 +126,7 @@ exports.generateclassschedule = async (req, res) => {
 };
 
 // ✅ NEW: Save classes and generate assessments (called from frontend)
-exports.saveClassesAndAssessments = async (req, res) => {
+exports.saveClassesAndAssessmentsremedial = async (req, res) => {
   try {
     const { classes, assessmentRequests } = req.body;
 
@@ -201,17 +201,17 @@ exports.saveClassesAndAssessments = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Save error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to save classes and assessments',
-      error: error.message
-    });
+    // console.error('Save error:', error);
+    // res.status(500).json({
+    //   success: false,
+    //   message: 'Failed to save classes and assessments',
+    //   error: error.message
+    // });
   }
 };
 
 // ✅ AGGREGATION: Get topics covered up to date (used by frontend)
-exports.getTopicsCoveredUpToDate = async (req, res) => {
+exports.getTopicsCoveredUpToDateremedial = async (req, res) => {
   try {
     const { course, coursecode, testDate, user, colid } = req.query;
 
@@ -259,17 +259,17 @@ exports.getTopicsCoveredUpToDate = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Topics aggregation error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to get topics',
-      error: error.message
-    });
+    // console.error('Topics aggregation error:', error);
+    // res.status(500).json({
+    //   success: false,
+    //   message: 'Failed to get topics',
+    //   error: error.message
+    // });
   }
 };
 
 // ✅ SIMPLE: Confirm schedule (no changes needed)
-exports.confirmclassschedule = async (req, res) => {
+exports.confirmclassscheduleremedial = async (req, res) => {
   try {
     const { confirmed, classes, assessments } = req.body;
 
@@ -287,10 +287,10 @@ exports.confirmclassschedule = async (req, res) => {
     });
 
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to confirm schedule',
-      error: error.message
-    });
+    // res.status(500).json({
+    //   success: false,
+    //   message: 'Failed to confirm schedule',
+    //   error: error.message
+    // });
   }
 };
