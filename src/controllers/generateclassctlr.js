@@ -24,190 +24,246 @@ async function callAI(prompt, retries = 2) {
   }
 }
 
-// ✅ SIMPLE: Generate topics only
-async function generateTopics(course, totalClasses) {
-  const prompt = `Generate exactly ${totalClasses} topics for "${course}". Format as numbered list:
+// ✅ ENHANCED: Generate topics with optional keyword (No DB changes)
+async function generateTopics(course, totalClasses, questionTopicKeyword = '') {
+    let prompt;
+    
+    if (questionTopicKeyword && questionTopicKeyword.trim()) {
+        // Enhanced prompt with keyword focus
+        prompt = `Generate exactly ${totalClasses} topics for "${course}" focusing on "${questionTopicKeyword.trim()}". 
+The topics should be related to or include concepts around "${questionTopicKeyword.trim()}".
+Format as numbered list:
 1. Topic 1
 2. Topic 2
 ...`;
-  
-  const response = await callAI(prompt);
-  return response.split('\n')
-    .filter(line => line.match(/^\d+\./))
-    .map(line => line.replace(/^\d+\.\s*/, '').trim())
-    .slice(0, totalClasses);
+    } else {
+        // Original prompt without keyword
+        prompt = `Generate exactly ${totalClasses} topics for "${course}". Format as numbered list:
+1. Topic 1
+2. Topic 2
+...`;
+    }
+
+    const response = await callAI(prompt);
+    return response.split('\n')
+        .filter(line => line.match(/^\d+\./))
+        .map(line => line.replace(/^\d+\.\s*/, '').trim())
+        .slice(0, totalClasses);
 }
 
-// ✅ SIMPLE: Generate questions for specific topics
-async function generateQuestions(course, topics, count) {
-  const prompt = `Generate ${count} multiple choice questions for "${course}" covering: ${topics.join(', ')}.
+
+// ✅ ENHANCED: Generate questions with keyword context (No DB changes)
+async function generateQuestions(course, topics, count, questionTopicKeyword = '') {
+    let prompt;
+    
+    if (questionTopicKeyword && questionTopicKeyword.trim()) {
+        prompt = `Generate ${count} multiple choice questions for "${course}" covering: ${topics.join(', ')}.
+Focus questions around the keyword: "${questionTopicKeyword.trim()}".
 Return only JSON array:
 [{"question":"...","optiona":"...","optionb":"...","optionc":"...","optiond":"...","correctanswer":"A","difficulty":"medium","coverTopic":"..."}]`;
+    } else {
+        prompt = `Generate ${count} multiple choice questions for "${course}" covering: ${topics.join(', ')}.
+Return only JSON array:
+[{"question":"...","optiona":"...","optionb":"...","optionc":"...","optiond":"...","correctanswer":"A","difficulty":"medium","coverTopic":"..."}]`;
+    }
 
-  const response = await callAI(prompt);
-  const jsonMatch = response.match(/\[.*\]/s);
-  if (!jsonMatch) return [];
-  
-  try {
-    const questions = JSON.parse(jsonMatch[0]);
-    return questions.map((q, i) => ({
-      questionnumber: i + 1,
-      question: q.question,
-      questiontype: 'multiple-choice',
-      optiona: q.optiona,
-      optionb: q.optionb,
-      optionc: q.optionc,
-      optiond: q.optiond,
-      correctanswer: q.correctanswer || 'A',
-      explanation: q.explanation || '',
-      difficulty: q.difficulty || 'medium',
-      points: 1,
-      isgenerated: true,
-      coverTopic: q.coverTopic || topics[0]
-    }));
-  } catch {
-    return [];
-  }
+    const response = await callAI(prompt);
+    const jsonMatch = response.match(/\[.*\]/s);
+    if (!jsonMatch) return [];
+
+    try {
+        const questions = JSON.parse(jsonMatch[0]);
+        return questions.map((q, i) => ({
+            questionnumber: i + 1,
+            question: q.question,
+            questiontype: 'multiple-choice',
+            optiona: q.optiona,
+            optionb: q.optionb,
+            optionc: q.optionc,
+            optiond: q.optiond,
+            correctanswer: q.correctanswer || 'A',
+            explanation: q.explanation || '',
+            difficulty: q.difficulty || 'medium',
+            points: 1,
+            isgenerated: true,
+            coverTopic: q.coverTopic || topics[0]
+        }));
+    } catch {
+        return [];
+    }
 }
+
 
 // ✅ MAIN: Generate class schedule (simplified)
 exports.generateclassschedule = async (req, res) => {
   try {
-    const { course, coursecode, startDate, totalHours, selectedDays, user, colid, name, program, programcode, semester, section } = req.body;
+        const { 
+            course, 
+            coursecode, 
+            startDate, 
+            totalHours, 
+            selectedDays, 
+            user, 
+            colid, 
+            name, 
+            program, 
+            programcode, 
+            semester, 
+            section,
+            questionTopicKeyword // ✅ NEW: Optional keyword (not saved to DB)
+        } = req.body;
 
-    if (!course || !totalHours || !selectedDays?.length || !startDate) {
-      return res.status(400).json({
-        success: false,
-        message: 'Missing required fields'
-      });
+        if (!course || !totalHours || !selectedDays?.length || !startDate) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required fields'
+            });
+        }
+
+        // ✅ STEP 1: Generate topics with AI (with optional keyword)
+        const topics = await generateTopics(course, parseInt(totalHours), questionTopicKeyword);
+        
+        if (topics.length === 0) {
+            return res.status(422).json({
+                success: false,
+                message: 'AI failed to generate topics',
+                cannotComplete: true
+            });
+        }
+
+        // ✅ STEP 2: Send data to frontend (pass keyword for frontend processing)
+        res.json({
+            success: true,
+            message: questionTopicKeyword ? 
+                `Topics generated successfully with focus on "${questionTopicKeyword}"` : 
+                'Topics generated successfully',
+            data: {
+                course,
+                coursecode,
+                topics,
+                startDate,
+                totalHours: parseInt(totalHours),
+                selectedDays,
+                user,
+                colid,
+                name,
+                program,
+                programcode,
+                semester,
+                section,
+                questionTopicKeyword: questionTopicKeyword || '' // ✅ Pass keyword for frontend use only
+            },
+            nextStep: 'frontend_processing'
+        });
+
+    } catch (error) {
+        // console.error('Topic generation error:', error);
+        // res.status(422).json({
+        //     success: false,
+        //     message: 'Cannot generate topics',
+        //     error: error.message,
+        //     cannotComplete: true
+        // });
     }
-
-    // ✅ STEP 1: Generate topics with AI
-    const topics = await generateTopics(course, parseInt(totalHours));
-    if (topics.length === 0) {
-      return res.status(422).json({
-        success: false,
-        message: 'AI failed to generate topics',
-        cannotComplete: true
-      });
-    }
-
-    // ✅ STEP 2: Send data to frontend for processing
-    res.json({
-      success: true,
-      message: 'Topics generated successfully',
-      data: {
-        course,
-        coursecode,
-        topics,
-        startDate,
-        totalHours: parseInt(totalHours),
-        selectedDays,
-        user,
-        colid,
-        name,
-        program,
-        programcode,
-        semester,
-        section
-      },
-      nextStep: 'frontend_processing'
-    });
-
-  } catch (error) {
-    // console.error('Topic generation error:', error);
-    // res.status(422).json({
-    //   success: false,
-    //   message: 'Cannot generate topics',
-    //   error: error.message,
-    //   cannotComplete: true
-    // });
-  }
 };
 
 // ✅ NEW: Save classes and generate assessments (called from frontend)
 exports.saveClassesAndAssessments = async (req, res) => {
   try {
-    const { classes, assessmentRequests } = req.body;
+        const { classes, assessmentRequests, questionTopicKeyword } = req.body;
 
-    // ✅ STEP 1: Bulk insert classes
-    const savedClasses = await classnew.insertMany(classes);
+        // ✅ STEP 1: Save classes with existing schema (no keyword field)
+        const savedClasses = await classnew.insertMany(classes);
 
-    // ✅ STEP 2: Generate assessments using aggregation
-    const assessments = [];
-    
-    for (const request of assessmentRequests) {
-      const { topics, questionCount, testDate, course, coursecode, user, colid, name } = request;
-      
-      if (topics.length === 0) continue;
+        // ✅ STEP 2: Generate assessments with keyword context (keyword affects generation only)
+        const assessments = [];
+        for (const request of assessmentRequests) {
+            const { topics, questionCount, testDate, course, coursecode, user, colid, name } = request;
+            
+            if (topics.length === 0) continue;
 
-      try {
-        const questions = await generateQuestions(course, topics, questionCount);
-        if (questions.length === 0) continue;
+            try {
+                // ✅ Pass keyword to question generation (affects AI prompts only)
+                const questions = await generateQuestions(course, topics, questionCount, questionTopicKeyword);
+                
+                if (questions.length === 0) continue;
 
-        assessments.push({
-          name: name,
-          user,
-          colid: parseInt(colid),
-          classid: coursecode,
-          course,
-          coursecode,
-          testtitle: `${course} - AI Assessment (${new Date(testDate).toLocaleDateString()})`,
-          description: `AI assessment with ${questions.length} questions`,
-          topic: course,
-          scheduleddate: new Date(testDate),
-          starttime: new Date(new Date(testDate).getTime() + (9 * 60 * 60 * 1000)),
-          endtime: new Date(new Date(testDate).getTime() + (11 * 60 * 60 * 1000)),
-          duration: Math.max(60, questions.length * 2),
-          totalnoofquestion: questions.length,
-          questions,
-          sectionBased: false,
-          sections: [],
-          shufflequestions: true,
-          showresultsimmediately: false,
-          allowretake: false,
-          passingscore: 50,
-          timelimit: true,
-          proctoringmode: false,
-          calculatorallowed: false,
-          formulasheetallowed: false,
-          instructions: `${questions.length} AI-generated questions`,
-          rules: ["Complete within time limit", "One correct answer per question"],
-          status: 'draft',
-          ispublished: false,
-          createdat: new Date(),
+                // ✅ Enhanced test title with keyword info (stored in existing fields)
+                const testTitle = questionTopicKeyword ? 
+                    `${course} - AI Assessment: ${questionTopicKeyword} (${new Date(testDate).toLocaleDateString()})` :
+                    `${course} - AI Assessment (${new Date(testDate).toLocaleDateString()})`;
+
+                const testDescription = questionTopicKeyword ?
+                    `AI assessment with ${questions.length} questions focusing on ${questionTopicKeyword}` :
+                    `AI assessment with ${questions.length} questions`;
+
+                assessments.push({
+                    name: name,
+                    user,
+                    colid: parseInt(colid),
+                    classid: coursecode,
+                    course,
+                    coursecode,
+                    testtitle: testTitle, // ✅ Keyword info stored in existing title field
+                    description: testDescription, // ✅ Keyword info stored in existing description field
+                    topic: course,
+                    scheduleddate: new Date(testDate),
+                    starttime: new Date(new Date(testDate).getTime() + (9 * 60 * 60 * 1000)),
+                    endtime: new Date(new Date(testDate).getTime() + (11 * 60 * 60 * 1000)),
+                    duration: Math.max(60, questions.length * 2),
+                    totalnoofquestion: questions.length,
+                    questions,
+                    sectionBased: false,
+                    sections: [],
+                    shufflequestions: true,
+                    showresultsimmediately: false,
+                    allowretake: false,
+                    passingscore: 50,
+                    timelimit: true,
+                    proctoringmode: false,
+                    calculatorallowed: false,
+                    formulasheetallowed: false,
+                    instructions: `${questions.length} AI-generated questions${questionTopicKeyword ? ` focusing on ${questionTopicKeyword}` : ''}`,
+                    rules: ["Complete within time limit", "One correct answer per question"],
+                    status: 'draft',
+                    ispublished: false,
+                    createdat: new Date()
+                    // ✅ NO questionTopicKeyword field - not stored in DB
+                });
+
+            } catch (error) {
+                console.error('Assessment generation error:', error);
+                continue;
+            }
+        }
+
+        // ✅ STEP 3: Save assessments with existing schema
+        let savedAssessments = [];
+        if (assessments.length > 0) {
+            savedAssessments = await testds1.insertMany(assessments);
+        }
+
+        res.json({
+            success: true,
+            message: questionTopicKeyword ? 
+                `Classes and assessments created successfully with focus on "${questionTopicKeyword}"` :
+                'Classes and assessments created successfully',
+            totalClasses: savedClasses.length,
+            totalAssessments: savedAssessments.length,
+            data: {
+                classes: savedClasses,
+                assessments: savedAssessments
+            }
         });
-      } catch (error) {
-        console.error('Assessment generation error:', error);
-        continue;
-      }
+
+    } catch (error) {
+        // console.error('Save error:', error);
+        // res.status(500).json({
+        //     success: false,
+        //     message: 'Failed to save classes and assessments',
+        //     error: error.message
+        // });
     }
-
-    // ✅ STEP 3: Save assessments
-    let savedAssessments = [];
-    if (assessments.length > 0) {
-      savedAssessments = await testds1.insertMany(assessments);
-    }
-
-    res.json({
-      success: true,
-      message: 'Classes and assessments created successfully',
-      totalClasses: savedClasses.length,
-      totalAssessments: savedAssessments.length,
-      data: {
-        classes: savedClasses,
-        assessments: savedAssessments
-      }
-    });
-
-  } catch (error) {
-    console.error('Save error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to save classes and assessments',
-      error: error.message
-    });
-  }
 };
 
 // ✅ AGGREGATION: Get topics covered up to date (used by frontend)
