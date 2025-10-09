@@ -63,6 +63,25 @@ exports.getclassesbyuseradvance = async (req, res) => {
     }
 };
 
+exports.getclassesbycourseadvance = async (req, res) =>{
+  try {
+    const { colid, coursecode } = req.query;
+
+    const classes = await classnew.find({
+      colid: parseInt(colid),
+      coursecode: coursecode
+    });
+
+    return res.json({
+      success: true,
+            message: 'Classes retrieved successfully',
+            data: classes
+    })
+  } catch (error) {
+    
+  }
+}
+
 // ======================
 // STUDENT SEARCH CONTROLLER
 // ======================

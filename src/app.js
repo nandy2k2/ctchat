@@ -35,6 +35,7 @@ const enrollmentlinkdsadvancectlr = require("./controllers/enrollmentlinkdsadvan
 const enrollmentlinkdsremedialctlr = require("./controllers/enrollmentlinkdsremedialctlr");
 const generatedclassadvancectlr = require("./controllers/generateclassadvancectlr");
 const generatedclassremedialctlr = require("./controllers/generateclassremedialctlr");
+const studentprofilectlr = require('./controllers/studentprofilectlr');
 
 dotenv.config();
 
@@ -425,7 +426,7 @@ app.get('/api/v2/getsinglestudentreportremedial', attendanceremedialctlr.getsing
 app.put("/api/v2/updateclassremedial/:id", attendanceremedialctlr.updateclassremedial);
 app.delete("/api/v2/deleteclassremedial/:id", attendanceremedialctlr.deleteclassremedial);
 app.get("/api/v2/getclassreportbycourseremedial", attendanceremedialctlr.getclassreportbycourseremedial);
-app.get("/api/v2/", attendanceremedialctlr.getfacultycoursesremedial)
+app.get("/api/v2/getfacultycoursesremedial", attendanceremedialctlr.getfacultycoursesremedial)
 
 // Enrollment listing + status change
 app.get("/api/v2/getenrollmentsremedial", attendanceremedialctlr.getenrollmentsremedial);
@@ -530,6 +531,23 @@ app.post("/api/v2/generateclassscheduleremedial", generatedclassremedialctlr.gen
 app.post("/api/v2/saveClassesAndAssessmentsremedial", generatedclassremedialctlr.saveClassesAndAssessmentsremedial);
 app.get("/api/v2/getTopicsCoveredUpToDateremedial", generatedclassremedialctlr.getTopicsCoveredUpToDateremedial);
 app.post("/api/v2/confirmclassscheduleremedial", generatedclassremedialctlr.confirmclassscheduleremedial);
+
+//Extra report Route
+app.get("/api/v2/getfacultycourses", attendancectlr.getfacultycourses);
+app.get("/api/v2/getclassreportbycourse", attendancectlr.getclassreportbycourse);
+
+// Student Class Route
+app.get("/api/v2/getclassesbycourse", attendancectlr.getclassesbycourse);
+app.get("/api/v2/getclassesbycourseadvance", attendanceadvancectlr.getclassesbycourseadvance);
+app.get("/api/v2/getclassesbycourseremedial", attendanceremedialctlr.getclassesbycourseremedial);
+
+// Student Profile Routes
+app.get("/api/v2/getstudentprofile", studentprofilectlr.getstudentprofile);
+app.get("/api/v2/getstudentprofilestats", studentprofilectlr.getstudentprofilestats);
+app.get("/api/v2/getstudentrecentactivities", studentprofilectlr.getstudentrecentactivities);
+app.get("/api/v2/getstudentupcomingassignments", studentprofilectlr.getstudentupcomingassignments);
+app.get("/api/v2/getstudentpcomingtests", studentprofilectlr.getstudentpcomingtests);
+app.get("/api/v2/getstudentcoursesdetails", studentprofilectlr.getstudentcoursesdetails);
 
 
 

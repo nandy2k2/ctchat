@@ -42,12 +42,12 @@ exports.createclass = async (req, res) => {
 // Get Classes by User
 exports.getclassesbyuser = async (req, res) => {
     try {
-        const { user, colid } = req.query;
+        const { user, colid, coursecode } = req.query;       
 
-        const classes = await classnew.find({
-            user,
-            colid: parseInt(colid)
-        }).sort({ classdate: -1, classtime: -1 });
+        let filter = { user };
+        if (colid) filter.colid = parseInt(colid);
+        if (coursecode) filter.coursecode = coursecode;
+        const classes = await classnew.find(filter).sort({ classdate: -1, classtime: -1 });
 
         res.json({
             success: true,
@@ -62,6 +62,25 @@ exports.getclassesbyuser = async (req, res) => {
         // });
     }
 };
+
+exports.getclassesbycourse = async (req, res) =>{
+  try {
+    const { colid, coursecode } = req.query;
+
+    const classes = await classnew.find({
+      colid: parseInt(colid),
+      coursecode: coursecode
+    });
+
+    return res.json({
+      success: true,
+            message: 'Classes retrieved successfully',
+            data: classes
+    })
+  } catch (error) {
+    
+  }
+}
 
 // ======================
 // STUDENT SEARCH CONTROLLER
@@ -384,99 +403,111 @@ exports.getclassreportaggregate = async (req, res) => {
 };
 
 exports.getattendancesummarybydate = async (req, res) => {
-    try {
-        const { user, colid, startDate, endDate } = req.query;
-
-        const report = await attendancenew.aggregate([
-            {
-                $match: {
-                    user: user, // Faculty user filter - this is the key fix
-                    colid: parseInt(colid),
-                    classdate: {
-                        $gte: new Date(startDate),
-                        $lte: new Date(endDate)
-                    }
-                }
-            },
-            {
-                $group: {
-                    _id: {
-                        $dateToString: {
-                            format: "%Y-%m-%d",
-                            date: "$classdate"
-                        }
-                    },
-                    totalStudents: { $addToSet: "$regno" },
-                    totalClasses: { $sum: 1 },
-                    totalPresent: {
-                        $sum: {
-                            $cond: [{ $eq: ["$att", 1] }, 1, 0]
-                        }
-                    },
-                    totalAbsent: {
-                        $sum: {
-                            $cond: [{ $eq: ["$att", 0] }, 1, 0]
-                        }
-                    },
-                    courses: {
-                        $addToSet: {
-                            course: "$course",
-                            coursecode: "$coursecode"
-                        }
-                    }
-                }
-            },
-            {
-                $addFields: {
-                    attendanceRate: {
-                        $cond: [
-                            { $eq: ["$totalClasses", 0] },
-                            0,
-                            {
-                                $round: [
-                                    {
-                                        $multiply: [
-                                            { $divide: ["$totalPresent", "$totalClasses"] },
-                                            100
-                                        ]
-                                    },
-                                    2
-                                ]
-                            }
-                        ]
-                    }
-                }
-            },
-            {
-                $project: {
-                    _id: 0,
-                    date: "$_id",
-                    totalStudents: { $size: "$totalStudents" },
-                    totalCourses: { $size: "$courses" },
-                    totalClasses: 1,
-                    totalPresent: 1,
-                    totalAbsent: 1,
-                    attendanceRate: 1
-                }
-            },
-            {
-                $sort: { date: 1 }
-            }
-        ]);
-
-        res.json({
-            success: true,
-            message: 'Attendance summary by date generated successfully',
-            data: report
-        });
-    } catch (error) {
-        // console.error('Attendance summary error:', error);
-        // res.status(500).json({
-        //     success: false,
-        //     message: 'Failed to generate attendance summary',
-        //     error: error.message
-        // });
+  try {
+    const { user, colid, startDate, endDate } = req.query;
+    
+    // Validate required parameters
+    if (!user || !colid || !startDate || !endDate) {
+      return res.status(400).json({
+        success: false,
+        message: 'user, colid, startDate, and endDate are required'
+      });
     }
+
+    const report = await attendancenew.aggregate([
+      {
+        $match: {
+          user: user,
+          colid: parseInt(colid),
+          classdate: {
+            $gte: new Date(startDate),
+            $lte: new Date(endDate)
+          }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: {
+              format: "%Y-%m-%d",
+              date: "$classdate"
+            }
+          },
+          totalStudents: { $addToSet: "$regno" },
+          totalClasses: { $sum: 1 },
+          totalPresent: {
+            $sum: {
+              $cond: [{ $eq: ["$att", 1] }, 1, 0]
+            }
+          },
+          totalAbsent: {
+            $sum: {
+              $cond: [{ $eq: ["$att", 0] }, 1, 0]
+            }
+          },
+          courses: {
+            $addToSet: {
+              course: "$course",
+              coursecode: "$coursecode"
+            }
+          }
+        }
+      },
+      {
+        $addFields: {
+          attendanceRate: {
+            $cond: [
+              { $eq: ["$totalClasses", 0] },
+              0,
+              {
+                $round: [
+                  {
+                    $multiply: [
+                      { $divide: ["$totalPresent", "$totalClasses"] },
+                      100
+                    ]
+                  },
+                  2
+                ]
+              }
+            ]
+          }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          date: "$_id",
+          totalStudents: { $size: "$totalStudents" },
+          totalCourses: { $size: "$courses" },
+          totalClasses: 1,
+          totalPresent: 1,
+          totalAbsent: 1,
+          attendanceRate: 1
+        }
+      },
+      {
+        $sort: { date: 1 }
+      }
+    ]);
+
+    res.json({
+      success: true,
+      message: 'Attendance summary by date generated successfully',
+      data: report,
+      period: {
+        startDate,
+        endDate
+      }
+    });
+  } catch (error) {
+    console.error('Attendance summary error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate attendance summary',
+      error: error.message
+    });
+  }
 };
 
 
@@ -870,6 +901,266 @@ exports.deleteclass = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to delete class',
+      error: error.message
+    });
+  }
+};
+
+// ✅ UPDATED: Class Report by Course (not individual classes)
+exports.getclassreportbycourse = async (req, res) => {
+  try {
+    const { user, coursecode, colid, startDate, endDate } = req.query;
+    
+    // Validate required parameters
+    if (!user || !coursecode || !colid) {
+      return res.status(400).json({
+        success: false,
+        message: 'user, coursecode, and colid are required'
+      });
+    }
+
+    // Build match criteria
+    const matchCriteria = {
+      user: user,
+      coursecode: coursecode,
+      colid: parseInt(colid)
+    };
+
+    // Add date range if provided
+    if (startDate && endDate) {
+      matchCriteria.classdate = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate)
+      };
+    }
+
+    // First check if documents exist
+    const documentCount = await attendancenew.countDocuments(matchCriteria);
+
+    if (documentCount === 0) {
+      return res.json({
+        success: true,
+        message: 'No attendance data found for this course',
+        data: {
+          students: [],
+          summary: {
+            totalStudents: 0,
+            totalClasses: 0,
+            totalAttendanceRecords: 0,
+            totalPresent: 0,
+            overallAttendanceRate: 0
+          },
+          courseInfo: {
+            coursecode,
+            course: '',
+            totalDaysWithClasses: 0
+          }
+        }
+      });
+    }
+
+    // Get course info
+    const courseInfo = await attendancenew.findOne(matchCriteria).select('course coursecode semester section program');
+
+    // Student-wise attendance aggregation
+    const report = await attendancenew.aggregate([
+      {
+        $match: matchCriteria
+      },
+      {
+        $group: {
+          _id: {
+            student: "$student",
+            regno: "$regno"
+          },
+          totalClasses: { $sum: 1 },
+          presentCount: {
+            $sum: {
+              $cond: [{ $eq: ["$att", 1] }, 1, 0]
+            }
+          },
+          absentCount: {
+            $sum: {
+              $cond: [{ $eq: ["$att", 0] }, 1, 0]
+            }
+          }
+        }
+      },
+      {
+        $addFields: {
+          attendancePercentage: {
+            $cond: [
+              { $eq: ["$totalClasses", 0] },
+              0,
+              {
+                $round: [
+                  {
+                    $multiply: [
+                      { $divide: ["$presentCount", "$totalClasses"] },
+                      100
+                    ]
+                  },
+                  2
+                ]
+              }
+            ]
+          }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          student: "$_id.student",
+          regno: "$_id.regno",
+          totalClasses: 1,
+          presentCount: 1,
+          absentCount: 1,
+          attendancePercentage: 1
+        }
+      },
+      {
+        $sort: { student: 1 }
+      }
+    ]);
+
+    // Calculate overall statistics
+    const classStats = await attendancenew.aggregate([
+      {
+        $match: matchCriteria
+      },
+      {
+        $group: {
+          _id: null,
+          totalStudents: { $addToSet: "$regno" },
+          totalClasses: { $addToSet: { $dateToString: { format: "%Y-%m-%d", date: "$classdate" } } },
+          totalAttendanceRecords: { $sum: 1 },
+          totalPresent: {
+            $sum: {
+              $cond: [{ $eq: ["$att", 1] }, 1, 0]
+            }
+          }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          totalStudents: { $size: "$totalStudents" },
+          totalClasses: { $size: "$totalClasses" },
+          totalAttendanceRecords: 1,
+          totalPresent: 1,
+          overallAttendanceRate: {
+            $cond: [
+              { $eq: ["$totalAttendanceRecords", 0] },
+              0,
+              {
+                $round: [
+                  {
+                    $multiply: [
+                      { $divide: ["$totalPresent", "$totalAttendanceRecords"] },
+                      100
+                    ]
+                  },
+                  2
+                ]
+              }
+            ]
+          }
+        }
+      }
+    ]);
+
+    res.json({
+      success: true,
+      message: 'Course report generated successfully',
+      data: {
+        students: report,
+        summary: classStats[0] || {
+          totalStudents: 0,
+          totalClasses: 0,
+          totalAttendanceRecords: 0,
+          totalPresent: 0,
+          overallAttendanceRate: 0
+        },
+        courseInfo: {
+          coursecode: coursecode,
+          course: courseInfo?.course || '',
+          semester: courseInfo?.semester || '',
+          section: courseInfo?.section || '',
+          program: courseInfo?.program || '',
+          totalDaysWithClasses: classStats[0]?.totalClasses || 0
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Course report error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate course report',
+      error: error.message
+    });
+  }
+};
+
+// ✅ NEW: Get Faculty Courses (for course selection)
+exports.getfacultycourses = async (req, res) => {
+  try {
+    const { user, colid } = req.query;
+    
+    if (!user || !colid) {
+      return res.status(400).json({
+        success: false,
+        message: 'user and colid are required'
+      });
+    }
+
+    // Get unique courses taught by this faculty
+    const courses = await attendancenew.aggregate([
+      {
+        $match: {
+          user: user,
+          colid: parseInt(colid)
+        }
+      },
+      {
+        $group: {
+          _id: {
+            coursecode: "$coursecode",
+            course: "$course"
+          },
+          semester: { $first: "$semester" },
+          section: { $first: "$section" },
+          program: { $first: "$program" },
+          lastClassDate: { $max: "$classdate" },
+          totalClasses: { $sum: 1 }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          coursecode: "$_id.coursecode",
+          course: "$_id.course",
+          semester: 1,
+          section: 1,
+          program: 1,
+          lastClassDate: 1,
+          totalClasses: 1
+        }
+      },
+      {
+        $sort: { lastClassDate: -1 }
+      }
+    ]);
+
+    res.json({
+      success: true,
+      message: 'Faculty courses retrieved successfully',
+      data: courses
+    });
+  } catch (error) {
+    console.error('Get faculty courses error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get faculty courses',
       error: error.message
     });
   }
