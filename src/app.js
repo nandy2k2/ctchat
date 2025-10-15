@@ -36,6 +36,7 @@ const enrollmentlinkdsremedialctlr = require("./controllers/enrollmentlinkdsreme
 const generatedclassadvancectlr = require("./controllers/generateclassadvancectlr");
 const generatedclassremedialctlr = require("./controllers/generateclassremedialctlr");
 const studentprofilectlr = require('./controllers/studentprofilectlr');
+const contactdsctlr = require('./controllers/contactdsctlr.js');
 
 dotenv.config();
 
@@ -548,6 +549,23 @@ app.get("/api/v2/getstudentrecentactivities", studentprofilectlr.getstudentrecen
 app.get("/api/v2/getstudentupcomingassignments", studentprofilectlr.getstudentupcomingassignments);
 app.get("/api/v2/getstudentpcomingtests", studentprofilectlr.getstudentpcomingtests);
 app.get("/api/v2/getstudentcoursesdetails", studentprofilectlr.getstudentcoursesdetails);
+
+
+// Regular Course Edit/Delete
+app.put("/api/v2/updatecourse/:id", coursedsctlr.updatecourse);
+app.delete("/api/v2/deletecourse/:id", coursedsctlr.deletecourse);
+
+// Advance Course Edit/Delete
+app.put("/api/v2/updatecourseadvance/:id", coursedsadvancectlr.updatecourseadvance);
+app.delete("/api/v2/deletecourseadvance/:id", coursedsadvancectlr.deletecourseadvance);
+
+// Remedial Course Edit/Delete
+app.put("/api/v2/updatecourseremedial/:id", coursedsremedialctlr.updatecourseremedial);
+app.delete("/api/v2/deletecourseremedial/:id", coursedsremedialctlr.deletecourseremedial);
+
+// Contact Management
+app.post("/api/v2/createcontact", contactdsctlr.createcontact);
+app.get("/api/v2/getallcontacts", contactdsctlr.getallcontacts);
 
 
 

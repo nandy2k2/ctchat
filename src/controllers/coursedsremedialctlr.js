@@ -79,6 +79,68 @@ exports.getcoursesbystudentremedial = async (req, res) => {
     }
 };
 
+// Update remedial course
+exports.updatecourseremedial = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { coursename, coursecode, year, type, status1, comments } = req.body;
+
+    const updatedCourse = await mfaccourses.findByIdAndUpdate(
+      id,
+      { coursename, coursecode, year, type, status1, comments },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedCourse) {
+      return res.status(404).json({
+        success: false,
+        message: 'Remedial course not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Remedial course updated successfully',
+      data: updatedCourse
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update remedial course',
+      error: error.message
+    });
+  }
+};
+
+// Delete remedial course
+exports.deletecourseremedial = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const deletedCourse = await mfaccourses.findByIdAndDelete(id);
+
+    if (!deletedCourse) {
+      return res.status(404).json({
+        success: false,
+        message: 'Remedial course not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Remedial course deleted successfully',
+      data: deletedCourse
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete remedial course',
+      error: error.message
+    });
+  }
+};
+
+
 // ======================
 // ASSIGNMENT CONTROLLERS
 // ======================

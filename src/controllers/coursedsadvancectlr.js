@@ -79,6 +79,68 @@ exports.getcoursesbystudentadvance = async (req, res) => {
     }
 };
 
+// Update advance course
+exports.updatecourseadvance = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { coursename, coursecode, year, type, status1, comments } = req.body;
+
+    const updatedCourse = await mfaccourses.findByIdAndUpdate(
+      id,
+      { coursename, coursecode, year, type, status1, comments },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedCourse) {
+      return res.status(404).json({
+        success: false,
+        message: 'Advance course not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Advance course updated successfully',
+      data: updatedCourse
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update advance course',
+      error: error.message
+    });
+  }
+};
+
+// Delete advance course
+exports.deletecourseadvance = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const deletedCourse = await mfaccourses.findByIdAndDelete(id);
+
+    if (!deletedCourse) {
+      return res.status(404).json({
+        success: false,
+        message: 'Advance course not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Advance course deleted successfully',
+      data: deletedCourse
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete advance course',
+      error: error.message
+    });
+  }
+};
+
+
 // ======================
 // ASSIGNMENT CONTROLLERS
 // ======================

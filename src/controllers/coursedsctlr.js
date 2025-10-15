@@ -51,11 +51,11 @@ exports.getcoursebyfaculty = async (req, res) => {
             data: courses
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Failed to retrieve faculty courses',
-            error: error.message
-        });
+        // res.status(500).json({
+        //     success: false,
+        //     message: 'Failed to retrieve faculty courses',
+        //     error: error.message
+        // });
     }
 };
 
@@ -71,13 +71,75 @@ exports.getcoursesbystudent = async (req, res) => {
             data: enrollments
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Failed to retrieve student courses',
-            error: error.message
-        });
+        // res.status(500).json({
+        //     success: false,
+        //     message: 'Failed to retrieve student courses',
+        //     error: error.message
+        // });
     }
 };
+
+// Update course
+exports.updatecourse = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { coursename, coursecode, year, type, status1, comments } = req.body;
+
+    const updatedCourse = await mfaccourses.findByIdAndUpdate(
+      id,
+      { coursename, coursecode, year, type, status1, comments },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedCourse) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Course updated successfully',
+      data: updatedCourse
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update course',
+      error: error.message
+    });
+  }
+};
+
+// Delete course
+exports.deletecourse = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const deletedCourse = await mfaccourses.findByIdAndDelete(id);
+
+    if (!deletedCourse) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Course deleted successfully',
+      data: deletedCourse
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete course',
+      error: error.message
+    });
+  }
+};
+
 
 // ======================
 // ASSIGNMENT CONTROLLERS
@@ -109,11 +171,11 @@ exports.createassignment = async (req, res) => {
             data: newAssignment
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Failed to create assignment',
-            error: error.message
-        });
+        // res.status(500).json({
+        //     success: false,
+        //     message: 'Failed to create assignment',
+        //     error: error.message
+        // });
     }
 };
 
@@ -132,11 +194,11 @@ exports.getassignmentsbycourse = async (req, res) => {
             data: assignments
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Failed to retrieve assignments',
-            error: error.message
-        });
+        // res.status(500).json({
+        //     success: false,
+        //     message: 'Failed to retrieve assignments',
+        //     error: error.message
+        // });
     }
 };
 
@@ -170,11 +232,11 @@ exports.getassignmentsfirstudent = async (req, res) => {
             data: assignmentsWithSubmissions
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Failed to retrieve student assignments',
-            error: error.message
-        });
+        // res.status(500).json({
+        //     success: false,
+        //     message: 'Failed to retrieve student assignments',
+        //     error: error.message
+        // });
     }
 };
 
@@ -204,11 +266,11 @@ exports.submitassignment = async (req, res) => {
             data: newSubmission
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Failed to submit assignment',
-            error: error.message
-        });
+        // res.status(500).json({
+        //     success: false,
+        //     message: 'Failed to submit assignment',
+        //     error: error.message
+        // });
     }
 };
 
@@ -224,11 +286,11 @@ exports.getassignmentsubmissions = async (req, res) => {
             data: submissions
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Failed to retrieve submissions',
-            error: error.message
-        });
+        // res.status(500).json({
+        //     success: false,
+        //     message: 'Failed to retrieve submissions',
+        //     error: error.message
+        // });
     }
 };
 
@@ -261,11 +323,11 @@ exports.createsyllabus = async (req, res) => {
             data: newSyllabus
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Failed to create syllabus',
-            error: error.message
-        });
+        // res.status(500).json({
+        //     success: false,
+        //     message: 'Failed to create syllabus',
+        //     error: error.message
+        // });
     }
 };
 
@@ -284,11 +346,11 @@ exports.getsyllabusbycourse = async (req, res) => {
             data: syllabus
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Failed to retrieve syllabus',
-            error: error.message
-        });
+        // res.status(500).json({
+        //     success: false,
+        //     message: 'Failed to retrieve syllabus',
+        //     error: error.message
+        // });
     }
 };
 
@@ -316,11 +378,11 @@ exports.marksyllabuscomplete = async (req, res) => {
             data: updatedSyllabus
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Failed to update syllabus',
-            error: error.message
-        });
+        // res.status(500).json({
+        //     success: false,
+        //     message: 'Failed to update syllabus',
+        //     error: error.message
+        // });
     }
 };
 
@@ -355,11 +417,11 @@ exports.createcoursematerial = async (req, res) => {
             data: newMaterial
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Failed to create course material',
-            error: error.message
-        });
+        // res.status(500).json({
+        //     success: false,
+        //     message: 'Failed to create course material',
+        //     error: error.message
+        // });
     }
 };
 
@@ -378,11 +440,11 @@ exports.getcoursematerialsbycourse = async (req, res) => {
             data: materials
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Failed to retrieve course materials',
-            error: error.message
-        });
+        // res.status(500).json({
+        //     success: false,
+        //     message: 'Failed to retrieve course materials',
+        //     error: error.message
+        // });
     }
 };
 
@@ -417,11 +479,11 @@ exports.savemessage = async (req, res) => {
             }
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Failed to save message',
-            error: error.message
-        });
+        // res.status(500).json({
+        //     success: false,
+        //     message: 'Failed to save message',
+        //     error: error.message
+        // });
     }
 };
 
@@ -450,11 +512,11 @@ exports.getmessagesbyroom = async (req, res) => {
             data: messages
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Failed to retrieve messages',
-            error: error.message
-        });
+        // res.status(500).json({
+        //     success: false,
+        //     message: 'Failed to retrieve messages',
+        //     error: error.message
+        // });
     }
 };
 
@@ -471,11 +533,11 @@ exports.getawsconfigbycolid = async (req, res) => {
             data: awsConfig
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Failed to retrieve AWS config',
-            error: error.message
-        });
+        // res.status(500).json({
+        //     success: false,
+        //     message: 'Failed to retrieve AWS config',
+        //     error: error.message
+        // });
     }
 };
 
