@@ -38,6 +38,8 @@ const generatedclassremedialctlr = require("./controllers/generateclassremedialc
 const studentprofilectlr = require('./controllers/studentprofilectlr');
 const contactdsctlr = require('./controllers/contactdsctlr.js');
 
+const reportsctlr = require("./controllers/reportsctlr.js");
+
 dotenv.config();
 
 const app = express();
@@ -566,6 +568,35 @@ app.delete("/api/v2/deletecourseremedial/:id", coursedsremedialctlr.deletecourse
 // Contact Management
 app.post("/api/v2/createcontact", contactdsctlr.createcontact);
 app.get("/api/v2/getallcontacts", contactdsctlr.getallcontacts);
+
+// ======================
+// REPORTS ROUTES
+// ======================
+
+// Attendance Reports
+app.get("/api/v2/getattendancereport", reportsctlr.getattendancereport);
+app.get("/api/v2/getattendancesummary", reportsctlr.getattendancesummary);
+app.get("/api/v2/getcoursewiseattendance", reportsctlr.getcoursewiseattendance);
+app.get("/api/v2/getattendancetrend", reportsctlr.getattendancetrend);
+
+// Enrollment Reports
+app.get("/api/v2/getenrollmentreport", reportsctlr.getenrollmentreport);
+app.get("/api/v2/getprogramenrollmentsummary", reportsctlr.getprogramenrollmentsummary);
+app.get("/api/v2/getcoursetypedistribution", reportsctlr.getcoursetypedistribution);
+
+// Student Reports
+app.get("/api/v2/getstudentcompletereport", reportsctlr.getstudentcompletereport);
+
+// Assignment Reports
+app.get("/api/v2/getassignmentreport", reportsctlr.getassignmentreport);
+app.get("/api/v2/getassignmentsubmissions", reportsctlr.getassignmentsubmissions);
+app.get("/api/v2/getassignmentsummary", reportsctlr.getassignmentsummary);
+
+// Test Reports
+app.get("/api/v2/gettestreport", reportsctlr.gettestreport);
+app.get("/api/v2/gettestsubmissions", reportsctlr.gettestsubmissions);
+app.get("/api/v2/gettestsummary", reportsctlr.gettestsummary);
+
 
 
 
